@@ -1,13 +1,23 @@
 from stats_tracker import StatsTracker
 from game import Game
 
+import argparse
 import glob
-import random
 import numpy as np
 import os
 import pickle
+import random
 
-DATA_PATH = '.\\data\\'
+parser = argparse.ArgumentParser()
+
+parser.add_argument('--sample_out_path', action='store', default='.\\samples.p', dest='sample_path',
+                    help='Output path for training sample pickle')
+parser.add_argument('--label_out_path', action='store', default='.\\labels.p', dest='label_path',
+                    help='Output path for training label pickle')
+parser.add_argument('--data_path', action='store', default='.\\data\\', dest='data_path',
+                    help='Input data dir to parse')
+
+args = parser.parse_args()
 
 def season_ongoing(season_event_file_lines):
   for team in season_event_file_lines:
@@ -16,7 +26,7 @@ def season_ongoing(season_event_file_lines):
   return False
   
 def data_from_game_files():
-  year_dirs = [f.path for f in os.scandir(DATA_PATH) if f.is_dir()]
+  year_dirs = [f.path for f in os.scandir(args.data_path) if f.is_dir()]
   year_dirs.sort()
   print('Years: {}'.format(year_dirs))
   
@@ -30,7 +40,6 @@ def data_from_game_files():
     
     for filename in glob.glob(os.path.join(year_dir, '*.EV*')):
       with open(filename, 'r') as f:
-        #print('opened {}'.format(filename))
         season_event_file_lines.append([line.rstrip() for line in f])
           
     # TODO: this is pretty inefficient
@@ -50,7 +59,7 @@ def data_from_game_files():
       new_game = Game()
       new_game.gobble(next_game_lines, stats)
       games.append(new_game)
-      #print('Finished game {} with score {}'.format(new_game.id, new_game.score))
+      print('Finished parsing game {} with score {}'.format(new_game.id, new_game.score))
       
     num_games = len(games)
     print('Parsed {} more games ({} total)'.format(num_games-initial_num_games, num_games))
@@ -67,17 +76,17 @@ def data_from_game_files():
     sample, visitor_label, home_label = game.to_sample()
     samples.append(sample)
     labels.append([visitor_label, home_label])
+    
+  print('{}x{}x{}'.format(len(samples), len(samples[6]), len(samples[6][6])))
+  test = np.asarray(samples)
+  print(test.shape)
   
   return samples, labels
 
 def main():
-  SAVED_SAMPLE_PATH = '.\\samples.p'
-  SAVED_LABEL_PATH = '.\\labels.p'
   
-  if os.path.isfile(SAVED_SAMPLE_PATH) and os.path.isfile(SAVED_LABEL_PATH):
-    print('Using labeled data found at {}'.format(SAVED_SAMPLE_PATH))
-    samples = pickle.load(open(SAVED_SAMPLE_PATH, 'rb'))
-    labels = pickle.load(open(SAVED_LABEL_PATH, 'rb'))
+  if os.path.isfile(args.sample_path) or os.path.isfile(args.label_path):
+    print('ERROR: Parsed game data already exists. Please delete {} and {} if you are intentionally recreating it.'.format(args.sample_path, args.label_path))
   else:
     print('No saved training data found. Generating from raw game files.')
     samples, labels = data_from_game_files()
@@ -85,10 +94,9 @@ def main():
     assert labels
     assert len(samples) == len(labels), '{} vs {}'.format(len(samples), len(labels))
     print('Generated {} training samples'.format(len(samples)))
-    # save for later reuse.
-    pickle.dump(samples, open(SAVED_SAMPLE_PATH, 'wb'))
-    pickle.dump(labels, open(SAVED_LABEL_PATH, 'wb'))
-    
+    # save for later model training.
+    pickle.dump(samples, open(args.sample_path, 'wb'))
+    pickle.dump(labels, open(args.label_path, 'wb'))
 
 if __name__ == "__main__":
     main()

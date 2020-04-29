@@ -1,5 +1,6 @@
 from event import Event
 import copy
+import numpy as np
 
 class Game(object):
   def __init__(self):
@@ -15,7 +16,9 @@ class Game(object):
     
     
   def to_sample(self):
-    return self.initial_roster[0] + self.initial_roster[1], self.score[0], self.score[1]
+    sample = self.initial_roster[0] + self.initial_roster[1]
+    print(np.array(sample).shape)
+    return sample, self.score[0], self.score[1]
     
   @classmethod
   def peakNextDate(cls, lines):
@@ -87,10 +90,4 @@ class Game(object):
         if initial_stats_tracker.has_player(player_id):
           player_vector = initial_stats_tracker.get_player(player_id).to_vector()
           player_vector.append(team)  # mark visitor/home
-          self.initial_roster[team].append(player_vector) 
-      
-        
-        
-      
-    
-  
+          self.initial_roster[team].append(player_vector)

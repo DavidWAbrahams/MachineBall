@@ -129,6 +129,12 @@ class Play(object):
           new_play.runner_advancement += 3
         elif advance in ['1-1', '2-2', '3-3']:
           pass
+        elif advance in ['2-1', '3-2']:
+          # apparently this happens, rarely :(
+          new_play.runner_advancement -= 1
+        elif advance in ['3-1']:
+          # Yeesh, I hope this hasn't happened.
+          new_play.runner_advancement -= 2
         elif re.search('X', advance):
           new_play.outs += 1
         elif re.search('B-', advance):

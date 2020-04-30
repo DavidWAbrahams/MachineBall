@@ -27,7 +27,6 @@ class FieldingStats(object):
     self.player = player
     
   def set_position(self, position):
-    #print('{} goes to position {}'.format(self.player.id, position))
     self._current_field_position = position
   
   def reset_position(self):
@@ -35,7 +34,6 @@ class FieldingStats(object):
     
   def unassign_position(self, old_position):
     if old_position == self._current_field_position:
-      #print('****Unassigning {} position from {}'.format(self.player.id, self._current_field_position))
       self._current_field_position = -2
     
   def error(self):

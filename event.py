@@ -15,7 +15,8 @@ class Event(object):
   def from_line(cls, line):
     event = Event()
     event.raw = line
-    event.parts = line.split(',') # TODO: improve this
+    # TODO: improve this. For example, handle comma inside quotation marks correctly.
+    event.parts = line.split(',')
     event.type = event.parts[0]
     return event
     

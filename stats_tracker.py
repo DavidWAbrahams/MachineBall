@@ -16,7 +16,6 @@ class StatsTracker(object):
     
   def _getOrCreate(self, player_id):
     if player_id not in self.players:
-      #print('***New player {}'.format(player_id))
       self.players[player_id] = Player(player_id)
     return self.players[player_id]
     
@@ -33,7 +32,6 @@ class StatsTracker(object):
       player.fielding.reset_position()
     
   def play(self, play_event, batter_id, fielder_ids):
-    #print(play_event.raw)
     new_play = Play.from_event(play_event)
     
     pitcher_id = fielder_ids[1]

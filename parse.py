@@ -76,10 +76,6 @@ def data_from_game_files():
     sample, visitor_label, home_label = game.to_sample()
     samples.append(sample)
     labels.append([visitor_label, home_label])
-    
-  print('{}x{}x{}'.format(len(samples), len(samples[6]), len(samples[6][6])))
-  test = np.asarray(samples)
-  print(test.shape)
   
   return samples, labels
 

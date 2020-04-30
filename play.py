@@ -3,14 +3,21 @@ from event import Event
 import re
 
 class Play(object):
+  """A single game play. Build one using Play.from_event() and then you can
+  access the high-level results of the play like points, outs, runner
+  movement, etc. Also notes which fielders participated, and who commited
+  errors."""
 
   def __init__(self):
     self.result = None
+    # The next two fields note the position of fielders who commited errors
+    # or otherwise participated in the play. They are noted using Retrosheet
+    # standard position format: an integer from 1 to 12 (1 meaning pitcher...)
     self.error_positions = set()
     self.fielders_involved = set()
-    self.points = [0, 0]  # away points, home points
+    self.points = [0, 0]  # away points scored, home points scored
     self.outs = 0
-    self.runner_advancement = 0
+    self.runner_advancement = 0  # how many based were gained (by runners, not the batter)
     self.pitches = []
     self.team_at_bat = -1  # 0 for visitors 1 for home
     self.raw_event = None
@@ -80,7 +87,6 @@ class Play(object):
         if fielders:
           new_play.error_positions = set(int(x) for x in fielders[0].strip('()'))
       else:
-        #print(basic_play)
         pass
         # raise Exception('event: {}, play: {}, play details: {}, basic play: {}, modifiers: {}'.format(play_event, play, play_details, basic_play, modifiers))
       if basic_play[-1].isdigit():

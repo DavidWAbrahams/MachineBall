@@ -33,6 +33,7 @@ tf.config.experimental.set_memory_growth(physical_devices[0], True)
 early_stopper = EarlyStopping(monitor='val_loss', verbose=1, patience=30)
 model_checkpoint = ModelCheckpoint(args.model_path, monitor='val_loss', mode='min', save_best_only=True, verbose=1)
 
+# Massage the data into numpy arrays
 if os.path.isfile(args.sample_path) and os.path.isfile(args.label_path):
   print('Using labeled data found at {}'.format(args.sample_path))
   samples = pickle.load(open(args.sample_path, 'rb'))
@@ -60,6 +61,7 @@ if os.path.isfile(args.sample_path) and os.path.isfile(args.label_path):
 else:
   raise Exception('Unable to find processed data. Please run the parser first, or use --sample_path and --sample_path if they are not in the default location.')
 
+# Define and train the model
 input_shape = samples_train[0].shape
 model = Sequential()
 model.add(Bidirectional(LSTM(64, return_sequences=True, input_shape=input_shape, dropout=0.1, recurrent_dropout=0.1)))

@@ -5,6 +5,11 @@ from player import Player
 from collections import defaultdict
 
 class StatsTracker(object):
+  """Calculates all players' statistics by reading every play in the dataset.
+  A given play may involve updates to the stats of the pitcher, the batter, and
+  multiple fielders.
+  """
+  
   def __init__(self):
     self.players = {}
     
@@ -32,6 +37,8 @@ class StatsTracker(object):
       player.fielding.reset_position()
     
   def play(self, play_event, batter_id, fielder_ids):
+    """Updates all players involved in a play.
+    fielder_ids is a map telling who is playing each field position."""
     new_play = Play.from_event(play_event)
     
     pitcher_id = fielder_ids[1]

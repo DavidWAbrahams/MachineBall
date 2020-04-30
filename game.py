@@ -14,14 +14,10 @@ class Game(object):
     # [ team 1 map of position:playerid, team 2 map of position:playerid]
     self.active_players = [{}, {}]
     
-    
-  def to_sample(self):
-    sample = self.initial_roster[0] + self.initial_roster[1]
-    print(np.array(sample).shape)
-    return sample, self.score[0], self.score[1]
-    
   @classmethod
   def peakNextDate(cls, lines):
+    """Given some lines from an event file, finds the date of the next game
+    in the lines."""
     for line in lines:
       event_line = Event.from_line(line)
       if event_line.type == Event.Types.id:
@@ -29,6 +25,13 @@ class Game(object):
     return None
     
   def gobble(self, lines, stats_tracker):
+    """Given some lines from an event file, reads the plays for one game.
+    The lines are consumed, so you can call this repeatedly on a list of
+    events to parse out all the games."""
+    
+    # Snapshot all player stats before the game starts. It would be
+    # unfair to let the model guess the games score using player stats that
+    # already included the game.
     initial_stats_tracker = copy.deepcopy(stats_tracker)
   
     # consumes event lines until the game appears to be over
@@ -40,7 +43,6 @@ class Game(object):
       self.date = int(self.id[3:])
       date_prefix = str(self.date)[:2]
       assert date_prefix in ['19', '20'], date_prefix # sanity check that year is 19xx or 20xx 
-      #print('Starting game {}'.format(self.id))
 
     while lines:
       # If we've reached another game, reset all current player positions
@@ -91,3 +93,10 @@ class Game(object):
           player_vector = initial_stats_tracker.get_player(player_id).to_vector()
           player_vector.append(team)  # mark visitor/home
           self.initial_roster[team].append(player_vector)
+          
+  def to_sample(self):
+    """Called after a game has been parsed, returns the initial stats of all
+    players and the final score."""
+    assert self.id, 'It appears this game has not been populated. Cannot sample it.'
+    sample = self.initial_roster[0] + self.initial_roster[1]
+    return sample, self.score[0], self.score[1]

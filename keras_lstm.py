@@ -59,7 +59,7 @@ if os.path.isfile(args.sample_path) and os.path.isfile(args.label_path):
   labels_train, labels_test = np.split(labels, [int(.9 * len(labels))])
   print('Training labels shape: {}'.format(labels_train.shape))
 else:
-  raise Exception('Unable to find processed data. Please run the parser first, or use --sample_path and --sample_path if they are not in the default location.')
+  raise Exception('Unable to find processed data. Please run the parser first, or use --sample_path and --label_path if they are not in the default location.')
 
 # Define and train the model
 input_shape = samples_train[0].shape

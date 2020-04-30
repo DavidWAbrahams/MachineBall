@@ -27,7 +27,7 @@ pip install h5py
 
 ### Parsing game logs
 Download some number of Retrosheet [game EVENT files](https://www.retrosheet.org/game.htm) (NOT box score files) and unzip them in subdirectories under 'data'. For example your directory structure could look like this:
-machineball\main.py
+machineball\parse.py
 machineball\data\2018ev\2018ANA.EVA
 machineball\data\2018ev\2018ARI.EVN
 ...

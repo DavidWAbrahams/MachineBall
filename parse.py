@@ -10,9 +10,9 @@ import random
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('--sample_out_path', action='store', default='.\\samples.p', dest='sample_path',
+parser.add_argument('--sample_path', action='store', default='.\\samples.p', dest='sample_path',
                     help='Output path for training sample pickle')
-parser.add_argument('--label_out_path', action='store', default='.\\labels.p', dest='label_path',
+parser.add_argument('--label_path', action='store', default='.\\labels.p', dest='label_path',
                     help='Output path for training label pickle')
 parser.add_argument('--data_path', action='store', default='.\\data\\', dest='data_path',
                     help='Input data dir to parse')

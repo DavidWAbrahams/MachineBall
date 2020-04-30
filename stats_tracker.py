@@ -46,7 +46,7 @@ class StatsTracker(object):
       self._getOrCreate(catcher_id).fielding.participated()
       self._getOrCreate(catcher_id).fielding.error()
     elif new_play.result in ['CS', 'CSH', 'PO', 'POCS', 'POCSH', 'FLE', 'OA', 'SB', 'SBH', 'DI', 'C']:
-      # Thing that don't automatically involve the pitcher and catcher.
+      # Things that don't automatically involve the pitcher and catcher.
       # caught stealing, picked off, error on a foul ball, other advance, stolen bases, defensive indifference, interference
       # TODO this could definitely have better attribution.
       pass

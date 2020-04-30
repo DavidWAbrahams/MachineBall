@@ -13,26 +13,6 @@ I'm SURE there are serious parsing bugs due to my clumsy code, the confusing fil
 
 ## Getting Started
 
-Download some number of Retrosheet [game EVENT files](https://www.retrosheet.org/game.htm) (NOT box score files) and unzip them in subdirectories under 'data'. For example your directory structure could look like this:
-machineball\main.py
-machineball\data\2018ev\2018ANA.EVA
-machineball\data\2018ev\2018ARI.EVN
-...
-machineball\data\2019ev\2019ANA.EVA
-machineball\data\2019ev\2019ARI.EVN
-...
-
-It is important that the directories under 'data' are named so that they sort chronologically. For instance, 'data\2018ev' and 'data\2019ev' is fine. But 'data\b2018' and 'data\a2019' is not, since a2019 would be erroneously parsed before b2018.
-
-The decade-length Retrosheet event files are fine too, but they are going to take a long time to parse.
-
-Once you have done this, you can begin parsing games into training samples. Simply run
-```
-python parse.py
-```
-
-This takes a few minutes per season. Once finished, the results are saved as Python pickles for fast reuse. If you want to regenerate the samples later with more data, just delete the pickle files (samples.p and labels.p in your app dir) and rerun the app.
-
 ### Prerequisites
 
 Game parsing requires just:
@@ -44,6 +24,35 @@ The Keras model requires TensorFlow, Keras, and
 ```
 pip install h5py
 ```
+
+### Parsing game logs
+Download some number of Retrosheet [game EVENT files](https://www.retrosheet.org/game.htm) (NOT box score files) and unzip them in subdirectories under 'data'. For example your directory structure could look like this:
+machineball\main.py
+machineball\data\2018ev\2018ANA.EVA
+machineball\data\2018ev\2018ARI.EVN
+...
+machineball\data\2019ev\2019ANA.EVA
+machineball\data\2019ev\2019ARI.EVN
+...
+
+It is important that the directories under 'data' are named so that they sort chronologically. For instance, 'data\2018ev' and 'data\2019ev' is fine. But 'data\b2018' and 'data\a2019' is not, since a2019 would be erroneously parsed before b2018. The Retrosheet zip files are named appropriately so no changes should be needed.
+
+The decade-length Retrosheet event files are fine too, but they are going to take a long time to parse.
+
+Once you've placed the game logs, you can begin parsing training samples. Simply run
+```
+python parse.py
+```
+
+This takes a few minutes per season. Once finished, the results are saved as Python pickles for fast reuse. If you want to regenerate the samples later with more data, just delete the pickle files (samples.p and labels.p in your app dir) and rerun the app.
+
+### Training a model
+I've provided an example Keras model that trains well using the data generated above. Simply run:
+```
+python keras_lstm.py
+```
+
+This will read the previously generated data and train a multi-layer bidirectional LSTM to predict game winners. The model is saved to disk for later use.
 
 ## Authors
 

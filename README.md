@@ -2,7 +2,7 @@
 
 Use public baseball data to train machine learning models. Baseball has just about the richest data set of any sport. Thousands of games are played per year and each one is [documented play-by play for free](https://www.retrosheet.org/game.htm) going back to 1919. But the data are trapped in a [fairly painful file format](https://www.retrosheet.org/eventfile.htm). For example, can you (or your ML project) understand the input "play,4,0,harpb001,22,BBFSFX,FC5/G5.3XH(52)"? This project converts the data into a format that you may find more useful for machine learning purposes. Specifically, it parses each game into a training sample that consists of:
 1. A list containing the stats of every player in the game (snapshotted before the game began). Each player is marked visiting team (0) or home team (1).
-2. The final score of the game in the form [visiting team score, home team score]
+2. The final score of the game.
 
 An example Keras model is provided that achieves >66% accuracy predicting game winners (on heldout test data) (given 3 years of training data). This compares favorably with [Vegas odds, which pick the winning team only ~58% of the time](https://www.oddsshark.com/sports-betting/which-sport-do-betting-underdogs-win-most-often). But take this performance with some skepticism, because the model has access to some unknowable data: the exact list of players who will participate in a game. So its performance would suffer in the real world, where we would have to guess who is injured and who will actually play.
 
@@ -27,12 +27,19 @@ pip install h5py
 
 ### Parsing game logs
 Download some number of Retrosheet [game EVENT files](https://www.retrosheet.org/game.htm) (NOT box score files) and unzip them in subdirectories under 'data'. For example your directory structure could look like this:
+
 machineball\parse.py
+
 machineball\data\2018ev\2018ANA.EVA
+
 machineball\data\2018ev\2018ARI.EVN
+
 ...
+
 machineball\data\2019ev\2019ANA.EVA
+
 machineball\data\2019ev\2019ARI.EVN
+
 ...
 
 It is important that the directories under 'data' are named so that they sort chronologically. For instance, 'data\2018ev' and 'data\2019ev' is fine. But 'data\b2018' and 'data\a2019' is not, since a2019 would be erroneously parsed before b2018. The Retrosheet zip files are named appropriately so no changes should be needed.
@@ -52,7 +59,7 @@ I've provided an example Keras model that trains well using the data generated a
 python keras_lstm.py
 ```
 
-This will read the previously generated data and train a multi-layer bidirectional LSTM to predict game winners. The model is saved to disk for later use.
+This will read the previously generated data and train a multi-layer bidirectional LSTM to predict game winners. The model is saved to disk for later use. It achieves ~66% accuracy when trained on all games from 2017-2019
 
 ## Authors
 

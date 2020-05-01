@@ -65,7 +65,7 @@ model.add(Bidirectional(LSTM(64, return_sequences=True, input_shape=input_shape,
 model.add(Bidirectional(LSTM(64, return_sequences=True, dropout=0.0, recurrent_dropout=0.0)))
 model.add(Bidirectional(LSTM(64, dropout=0.0, recurrent_dropout=0.0)))
 model.add(Dropout(0.2))
-model.add(Dense(1))
+model.add(Dense(1), activation='linear')
 
 model.compile(loss='mse', optimizer='adam', metrics=['accuracy'])
 

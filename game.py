@@ -40,6 +40,7 @@ class Game(object):
       id_event = Event.from_line(line)
       assert id_event.type == Event.Types.id, id_event.type
       self.id = id_event.parts[1]
+      print('Parsing game {}'.format(self.id))
       self.date = int(self.id[3:])
       date_prefix = str(self.date)[:2]
       assert date_prefix in ['19', '20'], date_prefix # sanity check that year is 19xx or 20xx 

@@ -158,6 +158,9 @@ class Play(object):
     new_play.result = str(new_play.result)
     new_play.result = re.findall('^[A-Z]*', new_play.result)[0] or re.findall('^[0-9]', new_play.result)[0]
     
+    if new_play.result == 'I':
+      new_play.result = 'IW'  # dedup notations for intentional walk
+    
     return new_play
     
    

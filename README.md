@@ -4,7 +4,7 @@ Use public baseball data to train machine learning models. Baseball has just abo
 1. A list containing the stats of every player in the game (snapshotted before the game began). Each player is marked visiting team (0) or home team (1).
 2. The final score of the game.
 
-An example Keras model is provided that achieves >66% accuracy predicting game winners (on heldout test data) (given 3 years of training data). This compares favorably with [Vegas odds, which pick the winning team only ~58% of the time](https://www.oddsshark.com/sports-betting/which-sport-do-betting-underdogs-win-most-often). But take this performance with some skepticism, because the model has access to some unknowable data: the exact list of players who will participate in a game. So its performance would suffer in the real world, where we would have to guess who is injured and who will actually play.
+An example Keras model is provided that achieves ~65% accuracy predicting game winners (on heldout test data) (given 3 years of training data). This compares favorably with [Vegas odds, which pick the winning team only ~58% of the time](https://www.oddsshark.com/sports-betting/which-sport-do-betting-underdogs-win-most-often). But take this performance with some skepticism, because the model has access to some unknowable data: the exact list of players who will participate in a game. So its performance would suffer in the real world, where we would have to guess who is injured and who will actually play.
 
 ## Words of Warning
 
@@ -54,12 +54,17 @@ python parse.py
 This takes a few minutes per season. Once finished, the results are saved as Python pickles for fast reuse. If you want to regenerate the samples later with more data, just delete the pickle files (samples.p and labels.p in your app dir) and rerun the app.
 
 ### Training a model
-I've provided an example Keras model that trains well using the data generated above. Simply run:
+I've provided an example Keras model that predicts which team will win, given the stats of all players participating. Simply run:
 ```
-python keras_lstm.py
+python keras_lstm_winner.py
 ```
+This will read the previously generated data and train a multi-layer bidirectional LSTM to predict game winners. The model is saved to disk for later use. It achieves ~65% accuracy when trained on all games from 2017-2019
 
-This will read the previously generated data and train a multi-layer bidirectional LSTM to predict game winners. The model is saved to disk for later use. It achieves ~66% accuracy when trained on all games from 2017-2019
+Another model predicts the point spread of a game.
+```
+python keras_lstm_spread.py
+```
+Its test predictions are wrong by a median of about 2.5 points when trained on all games from 2010-2019.
 
 ## Authors
 

@@ -59,7 +59,7 @@ def data_from_game_files():
       new_game = Game()
       new_game.gobble(next_game_lines, stats)
       games.append(new_game)
-      print('Finished parsing game {} with score {}'.format(new_game.id, new_game.score))
+      #print('Finished parsing game {} with score {}'.format(new_game.id, new_game.score))
       
     num_games = len(games)
     print('Parsed {} more games ({} total)'.format(num_games-initial_num_games, num_games))

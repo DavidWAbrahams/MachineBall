@@ -1,11 +1,11 @@
-import numpy as np
 from keras.models import Sequential, load_model
 from keras.layers import LSTM, Dense, Bidirectional, Dropout
 from keras.callbacks.callbacks import EarlyStopping, ModelCheckpoint
+from training_helpers import ShufflePlayers, LoadData, ShuffleCallback
+import numpy as np
 
 import argparse
 import os
-import pickle
 
 parser = argparse.ArgumentParser()
 
@@ -18,52 +18,46 @@ parser.add_argument('--label_path', action='store',
 parser.add_argument('--model_path', action='store',
                     default='spread_model.h5', dest='model_path',
                     help='Output path for the saved model')
+parser.add_argument('--max_epochs', action='store',
+                    default=1000, dest='max_epochs',
+                    help='Max training epochs', type=int)
+parser.add_argument('--batch_size', action='store',
+                    default=1000, dest='batch_size',
+                    help='Max training epochs', type=int)
                     
 args = parser.parse_args()
-
-samples_train = None
-labels_train = None
-
-samples_test = None
-labels_test = None
 
 # Hack to bypass CuBlas errors
 import tensorflow as tf
 physical_devices = tf.config.list_physical_devices('GPU') 
 tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
-# Early stopping callbacks
-early_stopper = EarlyStopping(monitor='val_loss', verbose=1, patience=30)
-model_checkpoint = ModelCheckpoint(args.model_path, monitor='val_loss', mode='min', save_best_only=True, verbose=1)
+samples_train = None
+samples_test = None
+labels_train = None
+labels_test = None
 
-# Massage the data into numpy arrays
+# Read and pad data from disk
 if os.path.isfile(args.sample_path) and os.path.isfile(args.label_path):
   print('Using labeled data found at {}'.format(args.sample_path))
-  samples = pickle.load(open(args.sample_path, 'rb'))
-  print('Read {} games'.format(len(samples)))
-  max_len = max([len(s) for s in samples])
-  min_len = min([len(s) for s in samples])
-  print('Game rosters vary in length from {} to {} players'.format(min_len, max_len))
-  player_len = len(samples[len(samples)//2][0])
-  print('Each player has {} stats'.format(player_len))
-  
-  # Pad all game samples to the same length
-  for game in samples:
-    while len(game) < max_len * 1.1:
-      game.append([0]*player_len)
-  samples = np.asarray(samples)
-  
-  labels = np.array(pickle.load(open(args.label_path, 'rb')))
-  labels = np.asarray([l[0] - l[1] for l in labels], dtype=int)
-  
-  # Hold back some data for testing
-  labels_train, labels_test = np.split(labels, [int(.9 * len(labels))])
-  print('Training labels shape: {}'.format(labels_train.shape))
-  samples_train, samples_test = np.split(samples, [int(.9 * len(samples))])
-  print('Training sample shape: {}'.format(samples_train.shape))
+  samples_train, samples_test, labels_train, labels_test = LoadData(
+    args.sample_path, args.label_path, test_fraction=0.1)
+  # Label data comes in the form [visitors score, home score].
+  # Condense to just a score spread [visitors score - home score]
+  labels_train = np.asarray(
+    [points[0] - points[1] for points in labels_train], dtype=int)
+  labels_test = np.asarray(
+    [points[0] - points[1] for points in labels_test], dtype=int)
 else:
-  raise Exception('Unable to find processed data. Please run the parser first, or use --sample_path and --label_path if they are not in the default location.')
+  raise Exception('Unable to find processed data. Please run parser.py first, or use --sample_path and --label_path if data are not in the default location.')
 
+# Early stopping with patience
+early_stopper = EarlyStopping(monitor='val_loss', verbose=1, patience=50)
+model_checkpoint = ModelCheckpoint(args.model_path, monitor='val_loss',
+  mode='min', save_best_only=True, verbose=1)
+# Shuffle player order in each epoch
+shuffler = ShuffleCallback(samples_train)
+  
 # Define and train the model
 input_shape = samples_train[0].shape
 model = Sequential()
@@ -75,7 +69,10 @@ model.add(Dense(1))
 
 model.compile(loss='mse', optimizer='adam', metrics=['accuracy'])
 
-model.fit(samples_train, labels_train, epochs=250, batch_size=1000, validation_split=0.1, shuffle=True, callbacks=[early_stopper, model_checkpoint])
+model.fit(samples_train, labels_train,
+  epochs=args.max_epochs, batch_size=args.batch_size,
+  validation_split=0.1, shuffle=True,
+  callbacks=[early_stopper, model_checkpoint, shuffler])
 
 print('')
 print('*********************************')
@@ -85,6 +82,7 @@ predicted_spreads = np.squeeze(model.predict(x=samples_test))
 predicted_winners = np.array([spread < 0 for spread in predicted_spreads], dtype=int)
 actual_winners = np.array([spread < 0 for spread in labels_test], dtype=int)
 wrong = np.sum(np.abs(np.subtract(predicted_winners, actual_winners)))
+print(wrong)
 print('Accuracy predicting game winners on test data: %.2f' % ((len(actual_winners)-wrong)/len(actual_winners)*100))
 
 wrong_by = np.mean(np.abs(np.subtract(predicted_spreads, labels_test)))

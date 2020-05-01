@@ -38,10 +38,12 @@ def data_from_game_files():
     initial_num_games = len(games)
     season_event_file_lines = []
     
+    # read all games from this season to RAM
     for filename in glob.glob(os.path.join(year_dir, '*.EV*')):
       with open(filename, 'r') as f:
         season_event_file_lines.append([line.rstrip() for line in f])
           
+    # Parse the season's games in chronological order
     # TODO: this is pretty inefficient
     while season_ongoing(season_event_file_lines):
       next_game_dates = []

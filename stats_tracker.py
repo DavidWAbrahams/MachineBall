@@ -60,7 +60,10 @@ class StatsTracker(object):
       self._getOrCreate(batter_id).batting.update(new_play)
     
     for fielder_position in new_play.fielders_involved | new_play.error_positions:
-      fielder_id = fielder_ids[fielder_position]
-      self._getOrCreate(fielder_id).fielding.update(new_play)
+      if fielder_position:
+        fielder_id = fielder_ids[fielder_position]
+        self._getOrCreate(fielder_id).fielding.update(new_play)
+      else:
+        print('Warning: saw a play with an invalid fielder: {}'.format(play_event.raw))
     
     return new_play.points

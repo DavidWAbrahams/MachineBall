@@ -43,7 +43,9 @@ class Game(object):
         print('Parsing game {}'.format(self.id))
         self.date = int(self.id[3:])
         date_prefix = str(self.date)[:2]
-        assert date_prefix in ['19', '20'], date_prefix # sanity check that year is 19xx or 20xx 
+        assert date_prefix in ['19', '20'], date_prefix # sanity check that year is 19xx or 20xx
+      else:
+        print('Skipping line: {}'.format(line))
 
     while lines:
       # If we've reached another game, reset all current player positions

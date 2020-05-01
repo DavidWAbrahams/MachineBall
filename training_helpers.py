@@ -25,13 +25,10 @@ def LoadData(sample_path, label_path, test_fraction):
   
   labels = np.array(pickle.load(open(label_path, 'rb')))
   
-  # Shuffle game order
-  rnd_idx = np.arange(samples.shape[0])
-  np.random.shuffle(rnd_idx)
-  samples = samples[rnd_idx]
-  labels = labels[rnd_idx]
-  
-  # Hold back some data for testing
+  # Hold back some data for testing. It's probably import that the game
+  # order has NOT been shuffled at this point, so that the test samples
+  # come from chronologically later games. It may not be fair to let the
+  # model train on player stats that were influenced by the test games.
   samples_train, samples_test = np.split(
     samples, [int((1-test_fraction) * len(samples))])
   labels_train, labels_test = np.split(

@@ -81,11 +81,13 @@ model = load_model(args.model_path)
 predicted_spreads = np.squeeze(model.predict(x=samples_test))
 predicted_winners = np.array([spread < 0 for spread in predicted_spreads], dtype=int)
 actual_winners = np.array([spread < 0 for spread in labels_test], dtype=int)
-wrong = np.sum(np.abs(np.subtract(predicted_winners, actual_winners)))
-print(wrong)
-print('Accuracy predicting game winners on test data: %.2f' % ((len(actual_winners)-wrong)/len(actual_winners)*100))
-
-wrong_by = np.mean(np.abs(np.subtract(predicted_spreads, labels_test)))
-print('The model\'s spread was wrong by an average of {:.2f} points.'.format(wrong_by))
-wrong_by = np.median(np.abs(np.subtract(predicted_spreads, labels_test)))
-print('The model\'s spread was wrong by a median of {:.2f} points.'.format(wrong_by))
+wrong_winners = np.sum(np.abs(np.subtract(predicted_winners, actual_winners)))
+print('Accuracy predicting game winners on test data: {:.2f}'.format(
+  (len(actual_winners)-wrong_winners)/len(actual_winners)*100))
+wrong_by_avg = np.mean(np.abs(np.subtract(predicted_spreads, labels_test)))
+print(
+  'The model\'s spread was wrong by an average of {:.2f} points.'.format(
+  wrong_by_avg))
+wrong_by_med = np.median(np.abs(np.subtract(predicted_spreads, labels_test)))
+print('The model\'s spread was wrong by a median of {:.2f} points.'.format(
+  wrong_by_med))

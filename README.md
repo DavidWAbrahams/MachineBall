@@ -56,13 +56,13 @@ This takes a few minutes per season. Once finished, the results are saved as Pyt
 ### Training a model
 I've provided an example Keras model that predicts which team will win, given the stats of all players participating. Simply run:
 ```
-python keras_lstm_winner.py
+python keras_winner.py
 ```
 This will read the previously generated data and train a multi-layer bidirectional LSTM to predict game winners. The model is saved to disk for later use. It achieves ~65% accuracy when trained on all games from 2017-2019
 
 Another model predicts the point spread of a game.
 ```
-python keras_lstm_spread.py
+python keras_spread.py
 ```
 Its test predictions are wrong by a median of about 2.5 points when trained on all games from 2010-2019.
 

@@ -2,9 +2,9 @@ from keras.models import Sequential, load_model
 from keras.layers import LSTM, Dense, Bidirectional, Dropout
 from keras.callbacks.callbacks import EarlyStopping, ModelCheckpoint
 from training_helpers import ShufflePlayers, LoadData, ShuffleCallback
-import numpy as np
 
 import argparse
+import numpy as np
 import os
 
 parser = argparse.ArgumentParser()
@@ -16,7 +16,7 @@ parser.add_argument('--label_path', action='store',
                     default='.\\labels.p', dest='label_path',
                     help='Input path for training label pickle')
 parser.add_argument('--model_path', action='store',
-                    default='spread_model.h5', dest='model_path',
+                    default='winner_model.h5', dest='model_path',
                     help='Output path for the saved model')
 parser.add_argument('--max_epochs', action='store',
                     default=1000, dest='max_epochs',
@@ -43,11 +43,11 @@ if os.path.isfile(args.sample_path) and os.path.isfile(args.label_path):
   samples_train, samples_test, labels_train, labels_test = LoadData(
     args.sample_path, args.label_path, test_fraction=0.1)
   # Label data comes in the form [visitors score, home score].
-  # Condense to just a score spread [visitors score - home score]
+  # Condense to just a winner (0=visitors, 1=home).
   labels_train = np.asarray(
-    [points[0] - points[1] for points in labels_train], dtype=int)
+    [points[0] > points[1] for points in labels_train], dtype=bool)
   labels_test = np.asarray(
-    [points[0] - points[1] for points in labels_test], dtype=int)
+    [points[0] > points[1] for points in labels_test], dtype=bool)
 else:
   raise Exception('Unable to find processed data. Please run parser.py first, or use --sample_path and --label_path if data are not in the default location.')
 
@@ -61,13 +61,17 @@ shuffler = ShuffleCallback(samples_train)
 # Define and train the model
 input_shape = samples_train[0].shape
 model = Sequential()
-model.add(Bidirectional(LSTM(64, return_sequences=True, input_shape=input_shape, dropout=0.1, recurrent_dropout=0.1)))
-model.add(Bidirectional(LSTM(64, return_sequences=True, dropout=0.0, recurrent_dropout=0.0)))
-model.add(Bidirectional(LSTM(64, dropout=0.0, recurrent_dropout=0.0)))
-model.add(Dropout(0.2))
-model.add(Dense(1, activation='linear'))
-
-model.compile(loss='mse', optimizer='adam', metrics=['accuracy'])
+model.add(Bidirectional(LSTM(
+  128, return_sequences=True, input_shape=input_shape,
+  dropout=0.1, recurrent_dropout=0.1)))
+model.add(Bidirectional(LSTM(
+  128, return_sequences=True, dropout=0.0, recurrent_dropout=0.0)))
+model.add(Bidirectional(LSTM(
+  128, dropout=0.0, recurrent_dropout=0.0)))
+model.add(Dropout(0.4))
+model.add(Dense(1, activation='sigmoid'))
+model.compile(
+  loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
 model.fit(samples_train, labels_train,
   epochs=args.max_epochs, batch_size=args.batch_size,
@@ -78,16 +82,5 @@ print('')
 print('*********************************')
 print('Testing best model on unseen data')
 model = load_model(args.model_path)
-predicted_spreads = np.squeeze(model.predict(x=samples_test))
-predicted_winners = np.array([spread < 0 for spread in predicted_spreads], dtype=int)
-actual_winners = np.array([spread < 0 for spread in labels_test], dtype=int)
-wrong_winners = np.sum(np.abs(np.subtract(predicted_winners, actual_winners)))
-print('Accuracy predicting game winners on test data: {:.2f}'.format(
-  (len(actual_winners)-wrong_winners)/len(actual_winners)*100))
-wrong_by_avg = np.mean(np.abs(np.subtract(predicted_spreads, labels_test)))
-print(
-  'The model\'s spread was wrong by an average of {:.2f} points.'.format(
-  wrong_by_avg))
-wrong_by_med = np.median(np.abs(np.subtract(predicted_spreads, labels_test)))
-print('The model\'s spread was wrong by a median of {:.2f} points.'.format(
-  wrong_by_med))
+_, accuracy = model.evaluate(x=samples_test, y=labels_test)
+print('Test accuracy: {:.2f}'.format(accuracy*100))

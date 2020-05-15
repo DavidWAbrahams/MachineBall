@@ -7,6 +7,7 @@ import numpy as np
 import os
 import pickle
 import random
+import os
 
 parser = argparse.ArgumentParser()
 
@@ -17,7 +18,9 @@ parser.add_argument('--label_path', action='store', default='.\\labels.p', dest=
 parser.add_argument('--data_path', action='store', default='.\\data\\', dest='data_path',
                     help='Input data dir to parse')
 parser.add_argument('--starters', action='store', default=False, dest='starters_only',
-                    help='Only train on starting players, not substitutes.')               
+                    help='Only train on starting players, not substitutes.')
+parser.add_argument('--full_roster', action='store', default=False, dest='full_roster',
+                    help='Only train using the full roster of the teams rather than actual participants.')                       
 
 args = parser.parse_args()
 
@@ -27,6 +30,37 @@ def season_ongoing(season_event_file_lines):
       return True
   return False
   
+def data_from_roster_files():
+  year_dirs = [f.path for f in os.scandir(args.data_path) if f.is_dir()]
+  year_dirs.sort()
+  rosters = {} # year: team: [player1, player2, ...]
+  
+  for year_dir in year_dirs:
+    print('Processesing season {} rosters'.format(year_dir))
+    season_event_file_lines = []
+    
+    # read all rosters from this season to RAM
+    for filename in glob.glob(os.path.join(year_dir, '*.ROS*')):
+      with open(filename, 'r') as f:
+        roster_name = os.path.splitext(os.path.basename(filename))[0]
+        year = roster_name[-4:]
+        assert len(year) == 4
+        assert year[:2] in ['19', '20']
+        team = roster_name[0:-4]
+        if year not in rosters:
+          rosters[year] = {}
+        if team not in rosters[year]:
+          rosters[year][team] = {}
+        
+        line_parts = [line.rstrip().split(',') for line in f]
+        for player_parts in line_parts:
+          player_id = player_parts[0]
+          batting_hand = player_parts[3]
+          throwing_hand = player_parts[4]
+          rosters[year][team][player_id] = {'batting_hand': batting_hand, 'throwing_hand': throwing_hand}
+        
+  return rosters
+  
 def data_from_game_files():
   year_dirs = [f.path for f in os.scandir(args.data_path) if f.is_dir()]
   year_dirs.sort()
@@ -35,8 +69,11 @@ def data_from_game_files():
   games = []
   stats = StatsTracker()
   
+  rosters = data_from_roster_files()
+  
   for year_dir in year_dirs:
     print('Processesing season {}'.format(year_dir))
+    
     initial_num_games = len(games)
     season_event_file_lines = []
     
@@ -61,7 +98,7 @@ def data_from_game_files():
       next_game_lines = season_event_file_lines[next_game_team_idx]
       # pass lines to game gobbler
       new_game = Game()
-      new_game.gobble(next_game_lines, stats)
+      new_game.gobble(next_game_lines, stats, starters_only=args.starters_only, full_roster=args.full_roster, rosters=rosters)
       games.append(new_game)
       #print('Finished parsing game {} with score {}'.format(new_game.id, new_game.score))
       
@@ -77,7 +114,7 @@ def data_from_game_files():
   samples = []
   labels = []
   for game in games:
-    sample, visitor_label, home_label = game.to_sample()
+    sample, visitor_label, home_label = game.to_sample(starters_only=args.starters_only)
     samples.append(sample)
     labels.append([visitor_label, home_label])
   

@@ -6,6 +6,7 @@ class Game(object):
   def __init__(self):
     self.id = 0
     self.date = 0
+    self.year = 0
     # [visiting team, home team]
     self.teams = [None, None]
     self.score = [0, 0]
@@ -15,6 +16,8 @@ class Game(object):
     self.starting_players = [set(), set()]
     # [ team 1 map of position:playerid, team 2 map of position:playerid]
     self.active_players = [{}, {}]
+    
+    self._last_event_type = None
     
   @classmethod
   def peakNextDate(cls, lines):
@@ -26,7 +29,7 @@ class Game(object):
         return int(event_line.parts[1][3:])
     return None
     
-  def gobble(self, lines, stats_tracker):
+  def gobble(self, lines, stats_tracker, starters_only=False, full_roster=False, rosters=None):
     """Given some lines from an event file, reads the plays for one game.
     The lines are consumed, so you can call this repeatedly on a list of
     events to parse out all the games."""
@@ -34,8 +37,10 @@ class Game(object):
     # Snapshot all player stats before the game starts. It would be
     # unfair to let the model guess the games score using player stats that
     # already included the game.
-    initial_stats_tracker = copy.deepcopy(stats_tracker)
-  
+    # Unfortunately this is the slowest step in the whole parsing flow.
+    if not starters_only and not full_roster:
+      initial_stats_tracker = copy.deepcopy(stats_tracker)
+      
     # consumes event lines until the game appears to be over
     while not self.id:
       line = lines.pop(0)
@@ -44,8 +49,9 @@ class Game(object):
         self.id = id_event.parts[1]
         print('Parsing game {}'.format(self.id))
         self.date = int(self.id[3:])
-        date_prefix = str(self.date)[:2]
-        assert date_prefix in ['19', '20'], date_prefix # sanity check that year is 19xx or 20xx
+        date_prefix = str(self.date)[:1]
+        assert date_prefix in ['1', '2'], date_prefix # sanity check that year is like 19xx or 2xxx
+        self.year = str(self.date)[:4]
       else:
         print('Skipping line: {}'.format(line))
 
@@ -60,12 +66,35 @@ class Game(object):
         
       lines.pop(0)
       
+      if (starters_only and 
+          self._last_event_type == Event.Types.start and
+          new_event.type != Event.Types.start):
+        for team in [0, 1]:
+          team_roster = rosters[self.year][self.teams[team]]
+          for player_id in self.players[team]:
+            if stats_tracker.has_player(player_id):
+              player_vector = stats_tracker.get_player(player_id).to_vector()
+                player_vector.append(team)  # mark visitor/home
+                player_vector.append(team_roster[player_id]['batting_hand'])  # mark batting hand
+                player_vector.append(team_roster[player_id]['throwing_hand'])  # mark throwing hand
+                self.initial_full_roster[team].append(player_vector)
+ 
       # note home and away teams
       if new_event.type == Event.Types.info:
-        if new_event.raw[1] == 'visteam':
-          self.teams[0] = new_event.raw[2]
-        elif new_event.raw[1] == 'hometeam':
-          self.teams[1] = new_event.raw[2]
+        if new_event.parts[1] == 'visteam':
+          self.teams[0] = new_event.parts[2]
+        elif new_event.parts[1] == 'hometeam':
+          self.teams[1] = new_event.parts[2]
+        if self.teams[0] and self.teams[1] and full_roster and not self.initial_full_roster[0]:
+          for team in [0, 1]:
+            team_roster = rosters[self.year][self.teams[team]]
+            for player_id in team_roster:
+              if stats_tracker.has_player(player_id):
+                player_vector = stats_tracker.get_player(player_id).to_vector()
+                player_vector.append(team)  # mark visitor/home
+                player_vector.append(team_roster[player_id]['batting_hand'])  # mark batting hand
+                player_vector.append(team_roster[player_id]['throwing_hand'])  # mark throwing hand
+                self.initial_full_roster[team].append(player_vector)
           
       # track the currently active players
       elif new_event.type in [Event.Types.start, Event.Types.sub]:
@@ -88,20 +117,20 @@ class Game(object):
         score_update = stats_tracker.play(new_event, batter_id=player_id, fielder_ids=self.active_players[team])
         self.score = [sum(x) for x in zip(self.score, score_update)]
         
-        
+      self._last_event_type = new_event.type
+    
     # Now that we know which players actually saw field time, go back
     # and get their initial stats (before this game was played). This is
     # the training data.
     # If we had no record of a player before this game, then sadly
     # we can't include them.
-    for team in [0, 1]:
-      for player_id in self.players[team]:
-        if initial_stats_tracker.has_player(player_id):
-          player_vector = initial_stats_tracker.get_player(player_id).to_vector()
-          player_vector.append(team)  # mark visitor/home
-          self.initial_full_roster[team].append(player_vector)
-          if player_id in self.starting_players[team]:
-            self.initial_starting_roster[team].append(player_vector)
+    if not starters_only and not full_roster:
+      for team in [0, 1]:
+        for player_id in self.players[team]:
+          if initial_stats_tracker.has_player(player_id):
+            player_vector = initial_stats_tracker.get_player(player_id).to_vector()
+            player_vector.append(team)  # mark visitor/home
+            self.initial_full_roster[team].append(player_vector)
           
   def to_sample(self, starters_only=False):
     """Called after a game has been parsed, returns the initial stats of all
@@ -109,7 +138,8 @@ class Game(object):
     
     Params
       starters_only: train only on the list of starting players, discarding info on subs."""
-    assert self.id, 'It appears this game has not been populated. Cannot sample it.'
+    assert self.id, 'It appears this game has not been populated. Cannot sample it.'      
+     
     if starters_only:
       sample = self.initial_starting_roster[0] + self.initial_starting_roster[1]
     else:

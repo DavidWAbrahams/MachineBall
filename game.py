@@ -130,6 +130,8 @@ class Game(object):
           if initial_stats_tracker.has_player(player_id):
             player_vector = initial_stats_tracker.get_player(player_id).to_vector()
             player_vector.append(team)  # mark visitor/home
+            player_vector.append(ord(team_roster[player_id]['batting_hand']))  # mark batting hand
+            player_vector.append(ord(team_roster[player_id]['throwing_hand']))  # mark throwing hand
             self.initial_full_roster[team].append(player_vector)
           
   def to_sample(self, starters_only=False):

@@ -21,7 +21,6 @@ def LoadData(sample_path, label_path, test_fraction):
     while len(game) < max_num_players * 1.1:
       game.append([0]*player_len)
   samples = np.asarray(samples)
-  ShufflePlayers(samples)
   
   labels = np.array(pickle.load(open(label_path, 'rb')))
   

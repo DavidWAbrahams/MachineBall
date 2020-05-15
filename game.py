@@ -74,10 +74,10 @@ class Game(object):
           for player_id in self.players[team]:
             if stats_tracker.has_player(player_id):
               player_vector = stats_tracker.get_player(player_id).to_vector()
-                player_vector.append(team)  # mark visitor/home
-                player_vector.append(team_roster[player_id]['batting_hand'])  # mark batting hand
-                player_vector.append(team_roster[player_id]['throwing_hand'])  # mark throwing hand
-                self.initial_full_roster[team].append(player_vector)
+              player_vector.append(team)  # mark visitor/home
+              player_vector.append(ord(team_roster[player_id]['batting_hand']))  # mark batting hand
+              player_vector.append(ord(team_roster[player_id]['throwing_hand']))  # mark throwing hand
+              self.initial_starting_roster[team].append(player_vector)
  
       # note home and away teams
       if new_event.type == Event.Types.info:
@@ -92,8 +92,8 @@ class Game(object):
               if stats_tracker.has_player(player_id):
                 player_vector = stats_tracker.get_player(player_id).to_vector()
                 player_vector.append(team)  # mark visitor/home
-                player_vector.append(team_roster[player_id]['batting_hand'])  # mark batting hand
-                player_vector.append(team_roster[player_id]['throwing_hand'])  # mark throwing hand
+                player_vector.append(ord(team_roster[player_id]['batting_hand']))  # mark batting hand
+                player_vector.append(ord(team_roster[player_id]['throwing_hand']))  # mark throwing hand
                 self.initial_full_roster[team].append(player_vector)
           
       # track the currently active players

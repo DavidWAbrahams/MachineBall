@@ -20,7 +20,9 @@ parser.add_argument('--data_path', action='store', default='.\\data\\', dest='da
 parser.add_argument('--starters', action='store', default=False, dest='starters_only',
                     help='Only train on starting players, not substitutes.')
 parser.add_argument('--full_roster', action='store', default=False, dest='full_roster',
-                    help='Only train using the full roster of the teams rather than actual participants.')                       
+                    help='Only train using the full roster of the teams rather than actual participants.')       
+parser.add_argument('--f', action='store', default=False, dest='force',
+                    help='Force overwrite of existing data.')                      
 
 args = parser.parse_args()
 
@@ -122,8 +124,8 @@ def data_from_game_files():
 
 def main():
   
-  if os.path.isfile(args.sample_path) or os.path.isfile(args.label_path):
-    print('ERROR: Parsed game data already exists. Please delete {} and {} if you are intentionally recreating it.'.format(args.sample_path, args.label_path))
+  if not args.force and (os.path.isfile(args.sample_path) or os.path.isfile(args.label_path)):
+    print('ERROR: Parsed game data already exists. Please use --f if you are intentionally recreating it.')
   else:
     print('No saved training data found. Generating from raw game files.')
     samples, labels = data_from_game_files()

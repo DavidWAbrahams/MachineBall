@@ -66,18 +66,30 @@ class Game(object):
         
       lines.pop(0)
       
-      if (starters_only and 
-          self._last_event_type == Event.Types.start and
+      
+      if (self._last_event_type == Event.Types.start and
           new_event.type != Event.Types.start):
         for team in [0, 1]:
           team_roster = rosters[self.year][self.teams[team]]
-          for player_id in self.players[team]:
-            if stats_tracker.has_player(player_id):
-              player_vector = stats_tracker.get_player(player_id).to_vector()
-              player_vector.append(team)  # mark visitor/home
-              player_vector.append(ord(team_roster[player_id]['batting_hand']))  # mark batting hand
-              player_vector.append(ord(team_roster[player_id]['throwing_hand']))  # mark throwing hand
-              self.initial_starting_roster[team].append(player_vector)
+          # record players for 'starts only' training
+          if starters_only:
+            for player_id in self.players[team]:
+              if stats_tracker.has_player(player_id):
+                player_vector = stats_tracker.get_player(player_id).to_vector()
+                player_vector.append(team)  # mark visitor/home
+                player_vector.append(ord(team_roster[player_id]['batting_hand']))  # mark batting hand
+                player_vector.append(ord(team_roster[player_id]['throwing_hand']))  # mark throwing hand
+                self.initial_starting_roster[team].append(player_vector)
+          elif full_roster:
+            for player_id in team_roster:
+              if stats_tracker.has_player(player_id):
+                player_vector = stats_tracker.get_player(player_id).to_vector()
+                player_vector.append(team)  # mark visitor/home
+                player_vector.append(ord(team_roster[player_id]['batting_hand']))  # mark batting hand
+                player_vector.append(ord(team_roster[player_id]['throwing_hand']))  # mark throwing hand
+                player_vector.append(int(player_id in self.starting_players[team])) # mark 1 if player is starting
+                self.initial_full_roster[team].append(player_vector)
+                
  
       # note home and away teams
       if new_event.type == Event.Types.info:
@@ -85,16 +97,6 @@ class Game(object):
           self.teams[0] = new_event.parts[2]
         elif new_event.parts[1] == 'hometeam':
           self.teams[1] = new_event.parts[2]
-        if self.teams[0] and self.teams[1] and full_roster and not self.initial_full_roster[0]:
-          for team in [0, 1]:
-            team_roster = rosters[self.year][self.teams[team]]
-            for player_id in team_roster:
-              if stats_tracker.has_player(player_id):
-                player_vector = stats_tracker.get_player(player_id).to_vector()
-                player_vector.append(team)  # mark visitor/home
-                player_vector.append(ord(team_roster[player_id]['batting_hand']))  # mark batting hand
-                player_vector.append(ord(team_roster[player_id]['throwing_hand']))  # mark throwing hand
-                self.initial_full_roster[team].append(player_vector)
           
       # track the currently active players
       elif new_event.type in [Event.Types.start, Event.Types.sub]:

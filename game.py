@@ -9,8 +9,10 @@ class Game(object):
     # [visiting team, home team]
     self.teams = [None, None]
     self.score = [0, 0]
-    self.initial_roster = [[], []]
+    self.initial_full_roster = [[], []]
+    self.initial_starting_roster = [[], []]
     self.players = [set(), set()]
+    self.starting_players = [set(), set()]
     # [ team 1 map of position:playerid, team 2 map of position:playerid]
     self.active_players = [{}, {}]
     
@@ -71,6 +73,8 @@ class Game(object):
         _, player_id, _, team, _, position = new_event.parts
         team, position = int(team), int(position)
         self.players[team].add(player_id)
+        if new_event.type == Event.Types.start:
+          self.starting_players[team].add(player_id)
         if position in self.active_players[team]:
           # the old player needs to be unassigned IF they aren't already
           # in another position.
@@ -95,11 +99,19 @@ class Game(object):
         if initial_stats_tracker.has_player(player_id):
           player_vector = initial_stats_tracker.get_player(player_id).to_vector()
           player_vector.append(team)  # mark visitor/home
-          self.initial_roster[team].append(player_vector)
+          self.initial_full_roster[team].append(player_vector)
+          if player_id in self.starting_players[team]:
+            self.initial_starting_roster[team].append(player_vector)
           
-  def to_sample(self):
+  def to_sample(self, starters_only=False):
     """Called after a game has been parsed, returns the initial stats of all
-    players and the final score."""
+    players and the final score.
+    
+    Params
+      starters_only: train only on the list of starting players, discarding info on subs."""
     assert self.id, 'It appears this game has not been populated. Cannot sample it.'
-    sample = self.initial_roster[0] + self.initial_roster[1]
+    if starters_only:
+      sample = self.initial_starting_roster[0] + self.initial_starting_roster[1]
+    else:
+      sample = self.initial_full_roster[0] + self.initial_full_roster[1]
     return sample, self.score[0], self.score[1]

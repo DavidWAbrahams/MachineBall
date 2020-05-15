@@ -1,6 +1,7 @@
 from keras.models import Sequential, load_model
 from keras.layers import GRU, Dense, Bidirectional, Dropout
 from keras.callbacks.callbacks import EarlyStopping, ModelCheckpoint
+from keras import regularizers
 from training_helpers import ShufflePlayers, LoadData, ShuffleCallback
 import numpy as np
 
@@ -55,12 +56,14 @@ shuffler = ShuffleCallback(samples_train)
 # Define and train the model
 input_shape = samples_train[0].shape
 model = Sequential()
-model.add(Bidirectional(GRU(64, return_sequences=True, input_shape=input_shape, dropout=0.1, recurrent_dropout=0.1)))
+model.add(Bidirectional(GRU(64, return_sequences=True, input_shape=input_shape, dropout=0.2, recurrent_dropout=0.2)))
 model.add(Bidirectional(GRU(64, return_sequences=True, dropout=0.0, recurrent_dropout=0.0)))
 model.add(Bidirectional(GRU(64, dropout=0.0, recurrent_dropout=0.0)))
-model.add(Dropout(0.2))
-model.add(Dense(2, activation='linear'))
-
+model.add(Dropout(0.4))
+model.add(Dense(
+  2, activation='linear',
+  kernel_regularizer=regularizers.l2(0.04),
+  bias_regularizer=regularizers.l2(0.04)))
 model.compile(loss='mse', optimizer='adam', metrics=['accuracy'])
 
 model.fit(samples_train, labels_train,

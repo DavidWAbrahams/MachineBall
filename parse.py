@@ -16,6 +16,8 @@ parser.add_argument('--label_path', action='store', default='.\\labels.p', dest=
                     help='Output path for training label pickle')
 parser.add_argument('--data_path', action='store', default='.\\data\\', dest='data_path',
                     help='Input data dir to parse')
+parser.add_argument('--starters', action='store', default=False, dest='starters_only',
+                    help='Only train on starting players, not substitutes.')               
 
 args = parser.parse_args()
 

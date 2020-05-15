@@ -2,7 +2,7 @@ from keras.models import Sequential, load_model
 from keras.layers import LSTM, Dense, Bidirectional, Dropout
 from keras.callbacks.callbacks import EarlyStopping, ModelCheckpoint
 from keras import regularizers
-from training_helpers import ShufflePlayers, LoadData, ShuffleCallback
+from training_helpers import LoadData, ShuffleCallback
 
 import argparse
 import numpy as np
@@ -66,9 +66,9 @@ model.add(Bidirectional(LSTM(
   128, return_sequences=True, input_shape=input_shape,
   dropout=0.4, recurrent_dropout=0.2)))
 model.add(Bidirectional(LSTM(
-  128, return_sequences=True, dropout=0.0, recurrent_dropout=0.0)))
+  128, return_sequences=True)))
 model.add(Bidirectional(LSTM(
-  128, dropout=0.0, recurrent_dropout=0.0)))
+  128)))
 model.add(Dropout(0.4))
 model.add(Dense(
   1, activation='sigmoid',

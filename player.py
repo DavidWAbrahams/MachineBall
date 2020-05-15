@@ -14,15 +14,23 @@ class Player(object):
     self.fielding.update(play)
     self.pitching.update(play)
     
+  def append(self, o):
+    """Adds results from other object o"""
+    self.batting.append(o.batting)
+    self.fielding.append(o.fielding)
+    self.pitching.append(o.pitching)
+    
   def to_vector(self):
     return self.batting.to_vector() + self.fielding.to_vector() + self.fielding.to_vector()    
     
 class FieldingStats(object):
+
   def __init__(self, player):
-    self.plays_per_position = [0] * 12
-    self.outs_per_position = [0] * 12
-    self.errors_per_position = [0] * 12
-    self.points_per_position = [0] * 12
+    self.NUM_FIELD_POSITIONS = 12
+    self.plays_per_position = [0] * self.NUM_FIELD_POSITIONS
+    self.outs_per_position = [0] * self.NUM_FIELD_POSITIONS
+    self.errors_per_position = [0] * self.NUM_FIELD_POSITIONS
+    self.points_per_position = [0] * self.NUM_FIELD_POSITIONS
     self._current_field_position = -1
     self.player = player
     
@@ -55,6 +63,14 @@ class FieldingStats(object):
   def to_vector(self):
     return self.plays_per_position + self.outs_per_position + self.errors_per_position
     
+  def append(self, o):
+    """Adds results from other object o"""
+    for p in range(NUM_FIELD_POSITIONS):
+      self.plays_per_position[p] += o.plays_per_position[p]
+      self.outs_per_position[p] += o.outs_per_position[p]
+      self.errors_per_position[p] += o.errors_per_position[p]
+      self.points_per_position[p] += o.points_per_position[p]
+    
 class PitchingStats(object):
 
   def __init__(self):
@@ -72,6 +88,18 @@ class PitchingStats(object):
     
     # todo
     # self.lefty
+    
+  def append(self, o):
+    """Adds results from other object o"""
+    for p in o.raw_pitches:
+      self.raw_pitches[p] += o.raw_pitches[p]
+    for r in o.results:
+      self.results[r] += o.results[r]
+    self.pitches_thrown += o.pitches_thrown
+    self.at_bats += o.at_bats
+    self.points += o.points
+    self.outs += o.outs
+    self.runner_advancement += 0
     
   def update(self, play):
     assert play.result

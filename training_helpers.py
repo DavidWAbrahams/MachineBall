@@ -16,7 +16,12 @@ def LoadData(sample_path, label_path, test_fraction):
   max_num_players = max([len(s) for s in samples])
   
   # Pad all game samples to the same length
-  player_len = len(samples[-1][0])
+  player_len = 0
+  for sample in samples:
+    if sample:
+      player_len = max(player_len, len(sample[0]))
+  print('Players have {} stats each'.format(player_len))
+  assert player_len
   for game in samples:
     while len(game) < max_num_players * 1.1:
       game.append([0]*player_len)

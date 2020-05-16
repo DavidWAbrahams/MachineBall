@@ -77,4 +77,3 @@ class StatsTracker(object):
         self.get_player(player_id).append(o.get_player(player_id))
       else:
         self.players[player_id] = o.get_player(player_id)
-        print('\t\t\t\tNew player spotted in this game: {}'.format(player_id))

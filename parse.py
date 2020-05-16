@@ -18,7 +18,7 @@ parser.add_argument('--label_path', action='store', default='.\\labels.p', dest=
                     help='Output path for training label pickle')
 parser.add_argument('--data_path', action='store', default='.\\data\\', dest='data_path',
                     help='Input data dir to parse')
-parser.add_argument('--roster_style', action='store', default=False, dest='roster_style',
+parser.add_argument('--roster_style', action='store', default='participants', dest='roster_style',
                     help='How to populate the roster of each team. options: starters, participants, full, last')      
 parser.add_argument('--f', action='store', default=False, dest='force',
                     help='Force overwrite of existing data.')                      

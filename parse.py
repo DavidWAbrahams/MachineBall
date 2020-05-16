@@ -2,6 +2,7 @@ from stats_tracker import StatsTracker
 from game import Game
 
 import argparse
+from collections import defaultdict
 import glob
 import numpy as np
 import os
@@ -17,10 +18,8 @@ parser.add_argument('--label_path', action='store', default='.\\labels.p', dest=
                     help='Output path for training label pickle')
 parser.add_argument('--data_path', action='store', default='.\\data\\', dest='data_path',
                     help='Input data dir to parse')
-parser.add_argument('--starters', action='store', default=False, dest='starters_only',
-                    help='Only train on starting players, not substitutes.')
-parser.add_argument('--full_roster', action='store', default=False, dest='full_roster',
-                    help='Only train using the full roster of the teams rather than actual participants.')       
+parser.add_argument('--roster_style', action='store', default=False, dest='roster_style',
+                    help='How to populate the roster of each team. options: starters, participants, full, last')      
 parser.add_argument('--f', action='store', default=False, dest='force',
                     help='Force overwrite of existing data.')                      
 
@@ -71,7 +70,8 @@ def data_from_game_files():
   games = []
   stats = StatsTracker()
   
-  rosters = data_from_roster_files()
+  full_rosters = data_from_roster_files()
+  last_game_rosters = defaultdict(dict)
   
   for year_dir in year_dirs:
     print('Processesing season {}'.format(year_dir))
@@ -100,9 +100,13 @@ def data_from_game_files():
       next_game_lines = season_event_file_lines[next_game_team_idx]
       # pass lines to game gobbler
       new_game = Game()
-      new_game.gobble(next_game_lines, stats, starters_only=args.starters_only, full_roster=args.full_roster, rosters=rosters)
+      new_game.gobble(next_game_lines, stats, roster_style=args.roster_style, full_rosters=full_rosters, last_game_rosters=last_game_rosters)
       games.append(new_game)
       #print('Finished parsing game {} with score {}'.format(new_game.id, new_game.score))
+      # track players for each team for the 'last' roster strategy
+      _, visitor_team, visitor_ids, home_team, home_ids = new_game.participant_ids()
+      last_game_rosters[visitor_team] = visitor_ids
+      last_game_rosters[home_team] = home_ids
       
     num_games = len(games)
     print('Parsed {} more games ({} total)'.format(num_games-initial_num_games, num_games))
@@ -116,7 +120,7 @@ def data_from_game_files():
   samples = []
   labels = []
   for game in games:
-    sample, visitor_label, home_label = game.to_sample(starters_only=args.starters_only)
+    sample, visitor_label, home_label = game.to_sample(starters_only=args.roster_style=='starters')
     samples.append(sample)
     labels.append([visitor_label, home_label])
   

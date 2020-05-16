@@ -1,4 +1,5 @@
 from event import Event
+from stats_tracker import StatsTracker
 import copy
 import numpy as np
 
@@ -29,17 +30,15 @@ class Game(object):
         return int(event_line.parts[1][3:])
     return None
     
-  def gobble(self, lines, stats_tracker, roster_style='participants', full_rosters=None, last_game_rosters=None):
+  def gobble(self, lines, persistent_stats_tracker, roster_style='participants', full_rosters=None, last_game_rosters=None):
     """Given some lines from an event file, reads the plays for one game.
     The lines are consumed, so you can call this repeatedly on a list of
     events to parse out all the games."""
     
-    # Snapshot all player stats before the game starts. It would be
-    # unfair to let the model guess the games score using player stats that
-    # already included the game.
-    # Unfortunately this is the slowest step in the whole parsing flow.
-    if roster_style == 'participants':
-      initial_stats_tracker = copy.deepcopy(stats_tracker)
+    # Note that persistent_stats_tracker shouldn't be touched until the end of the method,
+    # since some code assumes this is pristine from before the game started.
+    # Instead use a temporary per-game tracker and then merge them at the end.
+    game_stats_tracker = StatsTracker()
       
     # consumes event lines until the game appears to be over
     while not self.id:
@@ -61,7 +60,8 @@ class Game(object):
       line = lines[0]
       new_event = Event.from_line(line)
       if new_event.type == Event.Types.id:
-        stats_tracker.reset_player_positions()
+        persistent_stats_tracker.reset_player_positions()
+        game_stats_tracker.reset_player_positions()
         break
         
       lines.pop(0)
@@ -70,26 +70,29 @@ class Game(object):
           new_event.type != Event.Types.start):
         for team in [0, 1]:
           team_roster = full_rosters[self.year][self.teams[team]]
-          # record players for 'starts only' training
+          # record players for 'starters only' roster training
           if roster_style == 'starters':
             for player_id in self.player_ids[team]:
-              if stats_tracker.has_player(player_id):
-                player_vector = stats_tracker.get_player(player_id).to_vector()
+              if persistent_stats_tracker.has_player(player_id):
+                player_vector = persistent_stats_tracker.get_player(player_id).to_vector()
                 player_vector.append(team)  # mark visitor/home
                 player_vector.append(ord(team_roster[player_id]['batting_hand']))  # mark batting hand
                 player_vector.append(ord(team_roster[player_id]['throwing_hand']))  # mark throwing hand
+                player_vector.append(int(player_id in last_game_rosters[self.teams[team]])) # mark 1 if player played last game
                 self.initial_starting_roster[team].append(player_vector)
           if roster_style in ['full', 'last']:
             if roster_style == 'last':
               # Filter the roster list to only include players who participated in the last game
               team_roster = dict(filter(lambda elem: elem[0] in last_game_rosters[self.teams[team]], team_roster.items()))
             for player_id in team_roster:
-              if stats_tracker.has_player(player_id):
-                player_vector = stats_tracker.get_player(player_id).to_vector()
+              if persistent_stats_tracker.has_player(player_id):
+                player_vector = persistent_stats_tracker.get_player(player_id).to_vector()
                 player_vector.append(team)  # mark visitor/home
                 player_vector.append(ord(team_roster[player_id]['batting_hand']))  # mark batting hand
                 player_vector.append(ord(team_roster[player_id]['throwing_hand']))  # mark throwing hand
-                player_vector.append(int(player_id in self.starting_player_ids[team])) # mark 1 if player is starting
+                if roster_style == 'full':
+                  player_vector.append(int(player_id in last_game_rosters[self.teams[team]])) # mark 1 if player played last game
+
                 self.initial_full_roster[team].append(player_vector)
       # note home and away teams
       if new_event.type == Event.Types.info:
@@ -109,12 +112,14 @@ class Game(object):
         if position in self.active_players[team]:
           # the old player needs to be unassigned IF they aren't already
           # in another position.
-          stats_tracker.unassign_player(player_id=self.active_players[team][position], old_position=position)
+          persistent_stats_tracker.unassign_player(player_id=self.active_players[team][position], old_position=position)
+          game_stats_tracker.unassign_player(player_id=self.active_players[team][position], old_position=position)
         self.active_players[team][position] = player_id
-        stats_tracker.set_player_position(player_id, position)
+        persistent_stats_tracker.set_player_position(player_id, position)
+        game_stats_tracker.set_player_position(player_id, position)
       elif new_event.type == Event.Types.play:
         # update score
-        score_update = stats_tracker.play(new_event, batter_id=player_id, fielder_ids=self.active_players[team])
+        score_update = game_stats_tracker.play(new_event, batter_id=player_id, fielder_ids=self.active_players[team])
         self.score = [sum(x) for x in zip(self.score, score_update)]
         
       self._last_event_type = new_event.type
@@ -128,13 +133,15 @@ class Game(object):
       for team in [0, 1]:
         team_roster = full_rosters[self.year][self.teams[team]]
         for player_id in self.player_ids[team]:
-          if initial_stats_tracker.has_player(player_id):
-            player_vector = initial_stats_tracker.get_player(player_id).to_vector()
+          if persistent_stats_tracker.has_player(player_id):
+            player_vector = persistent_stats_tracker.get_player(player_id).to_vector()
             player_vector.append(team)  # mark visitor/home
             player_vector.append(ord(team_roster[player_id]['batting_hand']))  # mark batting hand
             player_vector.append(ord(team_roster[player_id]['throwing_hand']))  # mark throwing hand
+            player_vector.append(int(player_id in last_game_rosters[self.teams[team]])) # mark 1 if player played last game
             self.initial_full_roster[team].append(player_vector)
             
+    persistent_stats_tracker.append(game_stats_tracker)
   def participant_ids(self):
     # useful for the 'last' roster strategy, where we assume the coach will play the same
     # players as the last game.

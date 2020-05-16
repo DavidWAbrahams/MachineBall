@@ -61,11 +61,14 @@ class FieldingStats(object):
       self.errors_per_position[self._current_field_position-1] += 1
     
   def to_vector(self):
-    return self.plays_per_position + self.outs_per_position + self.errors_per_position
+    return (self.plays_per_position +
+      # outs and errors per play, per fielding position. Add 1 to denom to avoid zero division.
+      [o / (p+1) for o, p in zip(self.outs_per_position, self.plays_per_position)] +
+      [e / (p+1) for e, p in zip(self.errors_per_position, self.plays_per_position)])
     
   def append(self, o):
     """Adds results from other object o"""
-    for p in range(NUM_FIELD_POSITIONS):
+    for p in range(self.NUM_FIELD_POSITIONS):
       self.plays_per_position[p] += o.plays_per_position[p]
       self.outs_per_position[p] += o.outs_per_position[p]
       self.errors_per_position[p] += o.errors_per_position[p]
@@ -116,11 +119,14 @@ class PitchingStats(object):
     self.runner_advancement += play.runner_advancement
     
   def to_vector(self):
-    return list(self.raw_pitches.values()) + list(self.results.values()) + [self.pitches_thrown,
-      self.at_bats,
-      self.points,
-      self.outs,
-      self.runner_advancement]
+    at_bats_denominator = self.at_bats + 1  # Add 1 to denom to avoid zero division.
+    return ([p / at_bats_denominator for p in self.raw_pitches.values()] +
+            [r / at_bats_denominator for r in self.results.values()] +
+            [self.pitches_thrown,
+             self.at_bats,
+             self.points/at_bats_denominator,
+             self.outs/at_bats_denominator,
+             self.runner_advancement/at_bats_denominator])
     
 class BattingStats(PitchingStats):
   # Can I say battings stats just the equivalent of pitching stats, but

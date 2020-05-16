@@ -16,6 +16,9 @@ class StatsTracker(object):
   def get_player(self, player_id):
     return self.players[player_id]
     
+  def get_players(self):
+    return self.players
+    
   def has_player(self, player_id):
     return player_id in self.players
     
@@ -67,3 +70,10 @@ class StatsTracker(object):
         print('Warning: saw a play with an invalid fielder: {}'.format(play_event.raw))
     
     return new_play.points
+    
+  def append(self, o):
+    for player_id in o.get_players():
+      if self.has_player(player_id):
+        self.get_player(player_id).append(o.get_player(player_id))
+      else:
+        self.players[player_id] = o.get_player(player_id)

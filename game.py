@@ -60,7 +60,7 @@ class Game(object):
       line = lines[0]
       new_event = Event.from_line(line)
       if new_event.type == Event.Types.id:
-        persistent_stats_tracker.reset_player_positions()
+        #persistent_stats_tracker.reset_player_positions()
         game_stats_tracker.reset_player_positions()
         break
         
@@ -112,13 +112,13 @@ class Game(object):
         if position in self.active_players[team]:
           # the old player needs to be unassigned IF they aren't already
           # in another position.
-          persistent_stats_tracker.unassign_player(player_id=self.active_players[team][position], old_position=position)
+          #persistent_stats_tracker.unassign_player(player_id=self.active_players[team][position], old_position=position)
           game_stats_tracker.unassign_player(player_id=self.active_players[team][position], old_position=position)
         self.active_players[team][position] = player_id
-        persistent_stats_tracker.set_player_position(player_id, position)
+        #persistent_stats_tracker.set_player_position(player_id, position)
         game_stats_tracker.set_player_position(player_id, position)
       elif new_event.type == Event.Types.play:
-        # update score
+        # process play and update score
         score_update = game_stats_tracker.play(new_event, batter_id=player_id, fielder_ids=self.active_players[team])
         self.score = [sum(x) for x in zip(self.score, score_update)]
         
@@ -142,6 +142,7 @@ class Game(object):
             self.initial_full_roster[team].append(player_vector)
             
     persistent_stats_tracker.append(game_stats_tracker)
+    
   def participant_ids(self):
     # useful for the 'last' roster strategy, where we assume the coach will play the same
     # players as the last game.

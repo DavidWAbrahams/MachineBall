@@ -61,6 +61,8 @@ class FieldingStats(object):
       self.errors_per_position[self._current_field_position-1] += 1
     
   def to_vector(self):
+    # If any stats are added here, make sure they are also tracked in the
+    # append method.
     return (self.plays_per_position +
       # outs and errors per play, per fielding position. Add 1 to denom to avoid zero division.
       [o / (p+1) for o, p in zip(self.outs_per_position, self.plays_per_position)] +
@@ -102,7 +104,7 @@ class PitchingStats(object):
     self.at_bats += o.at_bats
     self.points += o.points
     self.outs += o.outs
-    self.runner_advancement += 0
+    self.runner_advancement += o.runner_advancement
     
   def update(self, play):
     assert play.result
@@ -119,6 +121,8 @@ class PitchingStats(object):
     self.runner_advancement += play.runner_advancement
     
   def to_vector(self):
+    # If any stats are added here, make sure they are also tracked in the
+    # append method.
     at_bats_denominator = self.at_bats + 1  # Add 1 to denom to avoid zero division.
     return ([p / at_bats_denominator for p in self.raw_pitches.values()] +
             [r / at_bats_denominator for r in self.results.values()] +

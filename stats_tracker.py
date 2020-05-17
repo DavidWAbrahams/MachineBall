@@ -67,7 +67,7 @@ class StatsTracker(object):
         fielder_id = fielder_ids[fielder_position]
         self._getOrCreate(fielder_id).fielding.update(new_play)
       else:
-        print('Warning: saw a play with an invalid fielder: {}'.format(play_event.raw))
+        print('Warning: saw a play with an invalid fielder ({}): {}'.format(fielder_position, play_event.raw))
     
     return new_play.points
     

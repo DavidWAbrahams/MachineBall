@@ -3,6 +3,7 @@ from game import Game
 
 import argparse
 from collections import defaultdict
+from collections import OrderedDict
 import glob
 import numpy as np
 import os
@@ -33,7 +34,7 @@ def season_ongoing(season_event_file_lines):
 def data_from_roster_files():
   year_dirs = [f.path for f in os.scandir(args.data_path) if f.is_dir()]
   year_dirs.sort()
-  rosters = {} # year: team: [player1, player2, ...]
+  rosters = OrderedDict() # year: team: [player1, player2, ...]
   
   for year_dir in year_dirs:
     print('Processesing season {} rosters'.format(year_dir))
@@ -50,7 +51,7 @@ def data_from_roster_files():
         if year not in rosters:
           rosters[year] = {}
         if team not in rosters[year]:
-          rosters[year][team] = {}
+          rosters[year][team] = OrderedDict()
         
         line_parts = [line.rstrip().split(',') for line in f]
         for player_parts in line_parts:

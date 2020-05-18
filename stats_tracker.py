@@ -2,7 +2,7 @@ from event import Event
 from play import Play
 from player import Player
 
-from collections import defaultdict
+from collections import OrderedDict
 
 class StatsTracker(object):
   """Calculates all players' statistics by reading every play in the dataset.
@@ -11,7 +11,7 @@ class StatsTracker(object):
   """
   
   def __init__(self):
-    self.players = {}
+    self.players = OrderedDict()
     
   def get_player(self, player_id):
     return self.players[player_id]
@@ -34,10 +34,6 @@ class StatsTracker(object):
     # the old player needs to be unassigned IF they aren't already
     # in another position.
     self.players[player_id].fielding.unassign_position(old_position)
-    
-  def reset_player_positions(self):
-    for player in self.players.values():
-      player.fielding.reset_position()
     
   def play(self, play_event, batter_id, fielder_ids):
     """Updates all players involved in a play.

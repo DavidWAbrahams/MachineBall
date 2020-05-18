@@ -2,6 +2,7 @@ from event import Event
 from stats_tracker import StatsTracker
 import copy
 import numpy as np
+from player import Player
 
 class Game(object):
   def __init__(self):
@@ -70,14 +71,14 @@ class Game(object):
           # record players for 'starters only' roster training
           if roster_style == 'starters':
             for player_id in self.player_ids[team]:
-              player_vector = self.player_vector(player_id, team, persistent_stats_tracker, team_roster)
+              player_vector = self.player_vector(player_id, team, persistent_stats_tracker, team_roster, last_game_rosters)
               self.initial_starting_roster[team].append(player_vector)
           if roster_style in ['full', 'last']:
             if roster_style == 'last':
               # Filter the roster list to only include players who participated in the last game
               team_roster = dict(filter(lambda elem: elem[0] in last_game_rosters[self.team_ids[team]], team_roster.items()))
             for player_id in team_roster:
-              player_vector = self.player_vector(player_id, team, persistent_stats_tracker, team_roster)
+              player_vector = self.player_vector(player_id, team, persistent_stats_tracker, team_roster, last_game_rosters)
               self.initial_full_roster[team].append(player_vector)
       # note home and away teams
       if new_event.type == Event.Types.info:
@@ -116,12 +117,12 @@ class Game(object):
       for team in [0, 1]:
         team_roster = full_rosters[self.year][self.team_ids[team]]
         for player_id in self.player_ids[team]:
-          player_vector = self.player_vector(player_id, team, persistent_stats_tracker, team_roster)
+          player_vector = self.player_vector(player_id, team, persistent_stats_tracker, team_roster, last_game_rosters)
           self.initial_full_roster[team].append(player_vector)
             
     persistent_stats_tracker.append(game_stats_tracker)
     
-  def player_vector(self, player_id, home_or_visitor, stats_tracker, team_roster):
+  def player_vector(self, player_id, home_or_visitor, stats_tracker, team_roster, last_game_rosters):
     if stats_tracker.has_player(player_id):
       player_vector = stats_tracker.get_player(player_id).to_vector()
     else:

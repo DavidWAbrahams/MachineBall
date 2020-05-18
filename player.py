@@ -36,9 +36,6 @@ class FieldingStats(object):
     
   def set_position(self, position):
     self._current_field_position = position
-  
-  def reset_position(self):
-    self._current_field_position = -3
     
   def unassign_position(self, old_position):
     if old_position == self._current_field_position:
@@ -63,7 +60,7 @@ class FieldingStats(object):
   def to_vector(self):
     # If any stats are added here, make sure they are also tracked in the
     # append method.
-    return (self.plays_per_position +
+    return ([p / 10000 for p in self.plays_per_position] +
       # outs and errors per play, per fielding position. Add 1 to denom to avoid zero division.
       [o / (p+1) for o, p in zip(self.outs_per_position, self.plays_per_position)] +
       [e / (p+1) for e, p in zip(self.errors_per_position, self.plays_per_position)])
@@ -126,8 +123,8 @@ class PitchingStats(object):
     at_bats_denominator = self.at_bats + 1  # Add 1 to denom to avoid zero division.
     return ([p / at_bats_denominator for p in self.raw_pitches.values()] +
             [r / at_bats_denominator for r in self.results.values()] +
-            [self.pitches_thrown,
-             self.at_bats,
+            [self.pitches_thrown / 10000,
+             self.at_bats / 10000,
              self.points/at_bats_denominator,
              self.outs/at_bats_denominator,
              self.runner_advancement/at_bats_denominator])

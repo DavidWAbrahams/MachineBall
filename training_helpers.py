@@ -38,6 +38,8 @@ def LoadData(sample_path, label_path, test_fraction):
   labels_train, labels_test = np.split(
     labels, [int((1-test_fraction) * len(labels))])
     
+  assert len(samples_train) + len(samples_test) == len(samples)
+    
   # Convert these views to copies, so that no cross-edits happen
   return (np.copy(samples_train), np.copy(samples_test),
           np.copy(labels_train),  np.copy(labels_test))

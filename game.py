@@ -1,8 +1,11 @@
 from event import Event
-from stats_tracker import StatsTracker
-import copy
-import numpy as np
 from player import Player
+from stats_tracker import StatsTracker
+
+import copy
+from collections import OrderedDict
+import numpy as np
+
 
 class Game(object):
   def __init__(self):
@@ -14,8 +17,8 @@ class Game(object):
     self.score = [0, 0]
     self.initial_full_roster = [[], []]
     self.initial_starting_roster = [[], []]
-    self.player_ids = [set(), set()]
-    self.starting_player_ids = [set(), set()]
+    self.player_ids = [OrderedDict(), OrderedDict()]
+    self.starting_player_ids = [OrderedDict(), OrderedDict()]
     # [ team 1 map of position:playerid, team 2 map of position:playerid]
     self.active_players = [{}, {}]
     
@@ -92,9 +95,9 @@ class Game(object):
         # todo: i dunno if this works for designated hitters, pinch hitters, pinch runners
         _, player_id, _, team, _, position = new_event.parts
         team, position = int(team), int(position)
-        self.player_ids[team].add(player_id)
+        self.player_ids[team][player_id] = True
         if new_event.type == Event.Types.start:
-          self.starting_player_ids[team].add(player_id)
+          self.starting_player_ids[team][player_id] = True
         if position in self.active_players[team]:
           # the old player needs to be unassigned IF they aren't already
           # in another position.
@@ -128,8 +131,8 @@ class Game(object):
     else:
       player_vector = Player(player_id).to_vector()
     player_vector.append(home_or_visitor)  # mark visitor/home
-    player_vector.append(ord(team_roster[player_id]['batting_hand']))  # mark batting hand
-    player_vector.append(ord(team_roster[player_id]['throwing_hand']))  # mark throwing hand
+    player_vector.extend(Player.hand_to_1_hot(team_roster[player_id]['batting_hand']))  # mark batting hand
+    player_vector.extend(Player.hand_to_1_hot(team_roster[player_id]['throwing_hand']))  # mark throwing hand
     player_vector.append(int(player_id in last_game_rosters[self.team_ids[home_or_visitor]])) # mark 1 if player played last game
     return player_vector
     

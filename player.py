@@ -21,7 +21,13 @@ class Player(object):
     self.pitching.append(o.pitching)
     
   def to_vector(self):
-    return self.batting.to_vector() + self.fielding.to_vector() + self.fielding.to_vector()    
+    return self.batting.to_vector() + self.fielding.to_vector() + self.fielding.to_vector()
+    
+  @staticmethod
+  def hand_to_1_hot(hand):
+    hands = ['L', 'R', 'B']
+    assert hand in hands, hand
+    return [int(hand == h) for h in hands]
     
 class FieldingStats(object):
 
@@ -127,7 +133,7 @@ class PitchingStats(object):
              self.at_bats / 10000,
              self.points/at_bats_denominator,
              self.outs/at_bats_denominator,
-             self.runner_advancement/at_bats_denominator])
+             self.runner_advancement/at_bats_denominator])  
     
 class BattingStats(PitchingStats):
   # Can I say battings stats just the equivalent of pitching stats, but

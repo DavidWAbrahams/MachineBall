@@ -7,7 +7,6 @@ import glob
 import numpy as np
 import os
 import pickle
-import random
 import os
 
 parser = argparse.ArgumentParser()
@@ -114,17 +113,20 @@ def data_from_game_files():
   print('')
   print('***Done parsing game events***')
   print('Total games parsed: {}'.format(len(games)))
-  sample_player = random.choice(list(stats.players.keys()))
-  print('Example player stat: {}'.format(stats.get_player(sample_player).to_vector()))
   
   samples = []
   labels = []
+  game_ids = []
   for game in games:
     sample, visitor_label, home_label = game.to_sample(starters_only=args.roster_style=='starters')
     samples.append(sample)
     labels.append([visitor_label, home_label])
+    game_ids.append(game.id)
+    
+  print('Example player stats:')
+  print(samples[-1][-1])
   
-  return samples, labels
+  return samples, labels, game_ids
 
 def main():
   
@@ -132,14 +134,15 @@ def main():
     print('ERROR: Parsed game data already exists. Please use --f if you are intentionally recreating it.')
   else:
     print('No saved training data found. Generating from raw game files.')
-    samples, labels = data_from_game_files()
+    samples, labels, game_ids = data_from_game_files()
     assert samples
     assert labels
     assert len(samples) == len(labels), '{} vs {}'.format(len(samples), len(labels))
     print('Generated {} training samples'.format(len(samples)))
     # save for later model training.
     pickle.dump(labels, open(args.label_path, 'wb'))
-    pickle.dump(samples, open(args.sample_path, 'wb'))    
+    pickle.dump(samples, open(args.sample_path, 'wb'))
+    pickle.dump(game_ids, open(args.sample_path + '.gameids', 'wb'))
 
 if __name__ == "__main__":
     main()

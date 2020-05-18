@@ -9,7 +9,7 @@ class Game(object):
     self.date = 0
     self.year = 0
     # [visiting team, home team]
-    self.teams = [None, None]
+    self.team_ids = [None, None]
     self.score = [0, 0]
     self.initial_full_roster = [[], []]
     self.initial_starting_roster = [[], []]
@@ -49,19 +49,16 @@ class Game(object):
         print('Parsing game {}'.format(self.id), end='\r')
         self.date = int(self.id[3:])
         date_prefix = str(self.date)[:1]
-        assert date_prefix in ['1', '2'], date_prefix # sanity check that year is like 19xx or 2xxx
+        assert date_prefix in ['1', '2'], date_prefix # sanity check that year is like 19xx or 2xxx. TODO fix in 1k years.
         self.year = str(self.date)[:4]
       else:
         print('Skipping line: {}'.format(line))
 
     while lines:
-      # If we've reached another game, reset all current player positions
-      # and don't consume the line.
+      # If we've reached another game, don't consume the line.
       line = lines[0]
       new_event = Event.from_line(line)
       if new_event.type == Event.Types.id:
-        #persistent_stats_tracker.reset_player_positions()
-        game_stats_tracker.reset_player_positions()
         break
         
       lines.pop(0)
@@ -69,37 +66,25 @@ class Game(object):
       if (self._last_event_type == Event.Types.start and
           new_event.type != Event.Types.start):
         for team in [0, 1]:
-          team_roster = full_rosters[self.year][self.teams[team]]
+          team_roster = full_rosters[self.year][self.team_ids[team]]
           # record players for 'starters only' roster training
           if roster_style == 'starters':
             for player_id in self.player_ids[team]:
-              if persistent_stats_tracker.has_player(player_id):
-                player_vector = persistent_stats_tracker.get_player(player_id).to_vector()
-                player_vector.append(team)  # mark visitor/home
-                player_vector.append(ord(team_roster[player_id]['batting_hand']))  # mark batting hand
-                player_vector.append(ord(team_roster[player_id]['throwing_hand']))  # mark throwing hand
-                player_vector.append(int(player_id in last_game_rosters[self.teams[team]])) # mark 1 if player played last game
-                self.initial_starting_roster[team].append(player_vector)
+              player_vector = self.player_vector(player_id, team, persistent_stats_tracker, team_roster)
+              self.initial_starting_roster[team].append(player_vector)
           if roster_style in ['full', 'last']:
             if roster_style == 'last':
               # Filter the roster list to only include players who participated in the last game
-              team_roster = dict(filter(lambda elem: elem[0] in last_game_rosters[self.teams[team]], team_roster.items()))
+              team_roster = dict(filter(lambda elem: elem[0] in last_game_rosters[self.team_ids[team]], team_roster.items()))
             for player_id in team_roster:
-              if persistent_stats_tracker.has_player(player_id):
-                player_vector = persistent_stats_tracker.get_player(player_id).to_vector()
-                player_vector.append(team)  # mark visitor/home
-                player_vector.append(ord(team_roster[player_id]['batting_hand']))  # mark batting hand
-                player_vector.append(ord(team_roster[player_id]['throwing_hand']))  # mark throwing hand
-                if roster_style == 'full':
-                  player_vector.append(int(player_id in last_game_rosters[self.teams[team]])) # mark 1 if player played last game
-
-                self.initial_full_roster[team].append(player_vector)
+              player_vector = self.player_vector(player_id, team, persistent_stats_tracker, team_roster)
+              self.initial_full_roster[team].append(player_vector)
       # note home and away teams
       if new_event.type == Event.Types.info:
         if new_event.parts[1] == 'visteam':
-          self.teams[0] = new_event.parts[2]
+          self.team_ids[0] = new_event.parts[2]
         elif new_event.parts[1] == 'hometeam':
-          self.teams[1] = new_event.parts[2]
+          self.team_ids[1] = new_event.parts[2]
           
       # track the currently active players
       elif new_event.type in [Event.Types.start, Event.Types.sub]:
@@ -112,10 +97,8 @@ class Game(object):
         if position in self.active_players[team]:
           # the old player needs to be unassigned IF they aren't already
           # in another position.
-          #persistent_stats_tracker.unassign_player(player_id=self.active_players[team][position], old_position=position)
           game_stats_tracker.unassign_player(player_id=self.active_players[team][position], old_position=position)
         self.active_players[team][position] = player_id
-        #persistent_stats_tracker.set_player_position(player_id, position)
         game_stats_tracker.set_player_position(player_id, position)
       elif new_event.type == Event.Types.play:
         # process play and update score
@@ -131,22 +114,28 @@ class Game(object):
     # we can't include them.
     if roster_style == 'participants':
       for team in [0, 1]:
-        team_roster = full_rosters[self.year][self.teams[team]]
+        team_roster = full_rosters[self.year][self.team_ids[team]]
         for player_id in self.player_ids[team]:
-          if persistent_stats_tracker.has_player(player_id):
-            player_vector = persistent_stats_tracker.get_player(player_id).to_vector()
-            player_vector.append(team)  # mark visitor/home
-            player_vector.append(ord(team_roster[player_id]['batting_hand']))  # mark batting hand
-            player_vector.append(ord(team_roster[player_id]['throwing_hand']))  # mark throwing hand
-            player_vector.append(int(player_id in last_game_rosters[self.teams[team]])) # mark 1 if player played last game
-            self.initial_full_roster[team].append(player_vector)
+          player_vector = self.player_vector(player_id, team, persistent_stats_tracker, team_roster)
+          self.initial_full_roster[team].append(player_vector)
             
     persistent_stats_tracker.append(game_stats_tracker)
+    
+  def player_vector(self, player_id, home_or_visitor, stats_tracker, team_roster):
+    if stats_tracker.has_player(player_id):
+      player_vector = stats_tracker.get_player(player_id).to_vector()
+    else:
+      player_vector = Player(player_id).to_vector()
+    player_vector.append(home_or_visitor)  # mark visitor/home
+    player_vector.append(ord(team_roster[player_id]['batting_hand']))  # mark batting hand
+    player_vector.append(ord(team_roster[player_id]['throwing_hand']))  # mark throwing hand
+    player_vector.append(int(player_id in last_game_rosters[self.team_ids[home_or_visitor]])) # mark 1 if player played last game
+    return player_vector
     
   def participant_ids(self):
     # useful for the 'last' roster strategy, where we assume the coach will play the same
     # players as the last game.
-    return self.year, self.teams[0], self.player_ids[0], self.teams[1], self.player_ids[1]
+    return self.year, self.team_ids[0], self.player_ids[0], self.team_ids[1], self.player_ids[1]
           
   def to_sample(self, starters_only=False):
     """Called after a game has been parsed, returns the initial stats of all

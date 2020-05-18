@@ -138,8 +138,8 @@ def main():
     assert len(samples) == len(labels), '{} vs {}'.format(len(samples), len(labels))
     print('Generated {} training samples'.format(len(samples)))
     # save for later model training.
-    pickle.dump(samples, open(args.sample_path, 'wb'))
     pickle.dump(labels, open(args.label_path, 'wb'))
+    pickle.dump(samples, open(args.sample_path, 'wb'))    
 
 if __name__ == "__main__":
     main()

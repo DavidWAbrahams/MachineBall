@@ -36,6 +36,10 @@ class Play(object):
   
     type, inning, team_at_bat, player_at_bat, _, pitches, play = play_event.parts
     assert type == Event.Types.play
+    if team_at_bat == 'b':
+      # known bad data in 1963KC1.EVA
+      team_at_bat = 0
+      
     new_play.team_at_bat = int(team_at_bat)
     assert new_play.team_at_bat in [0, 1], new_play.team_at_bat
     

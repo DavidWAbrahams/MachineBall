@@ -119,10 +119,13 @@ def data_from_game_files():
   labels = []
   game_ids = []
   for game in games:
-    sample, visitor_label, home_label = game.to_sample(starters_only=args.roster_style=='starters')
-    samples.append(sample)
-    labels.append([visitor_label, home_label])
-    game_ids.append(game.id)
+    if game.is_good_sample():
+      sample, visitor_label, home_label = game.to_sample(starters_only=args.roster_style=='starters')
+      samples.append(sample)
+      labels.append([visitor_label, home_label])
+      game_ids.append(game.id)
+      
+  print('Purged {} out of {} games due to sparse player stats.'.format(len(games)-len(samples), len(games)))
     
   print('Example player stats:')
   print(samples[-1][-1])

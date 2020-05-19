@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 class Player(object):
   def __init__(self, id):
     self.id = id # to be hidden from model?)
@@ -9,11 +11,6 @@ class Player(object):
     #age?
     #contract status? :)
     
-  def update(self, play):
-    self.batting.update(play)
-    self.fielding.update(play)
-    self.pitching.update(play)
-    
   def append(self, o):
     """Adds results from other object o"""
     self.batting.append(o.batting)
@@ -23,11 +20,17 @@ class Player(object):
   def to_vector(self):
     return self.batting.to_vector() + self.fielding.to_vector() + self.fielding.to_vector()
     
+  def good_sample(self):
+    # Whether there is enough info on this player to be a good sample.
+    return self.batting.at_bats > 20 or self.pitching.at_bats > 50
+    
   @staticmethod
   def hand_to_1_hot(hand):
+    # converts handedness (right, left, both) to a 1 hot vector
     hands = ['L', 'R', 'B']
     assert hand in hands, hand
     return [int(hand == h) for h in hands]
+    
     
 class FieldingStats(object):
 
@@ -79,23 +82,21 @@ class FieldingStats(object):
       self.errors_per_position[p] += o.errors_per_position[p]
       self.points_per_position[p] += o.points_per_position[p]
     
+    
 class PitchingStats(object):
 
   def __init__(self):
     _PITCH_TYPES = ['+', '*', '.', '1', '2', '3', '>', 'B', 'C', 'F', 'H', 'I', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'X', 'Y']
-    self.raw_pitches = {x: 0 for x in _PITCH_TYPES}
+    self.raw_pitches = OrderedDict(zip(_PITCH_TYPES, [0] * len(_PITCH_TYPES)))
     
     self._RESULT_TYPES = set(['1', '2', '3', '4', '5', '6', '7', '8', '9', 'S', 'D', 'T', 'HR', 'W', 'HP', 'K', 'E', 'SB', 'BK', 'WP', 'FC', 'IW', 'DGR'])
-    self.results = {x: 0 for x in self._RESULT_TYPES}
+    self.results = OrderedDict(zip(self._RESULT_TYPES, [0] * len(self._RESULT_TYPES)))
   
     self.pitches_thrown = 0
     self.at_bats = 0
     self.points = 0
     self.outs = 0
     self.runner_advancement = 0
-    
-    # todo
-    # self.lefty
     
   def append(self, o):
     """Adds results from other object o"""

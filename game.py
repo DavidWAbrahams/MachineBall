@@ -24,6 +24,8 @@ class Game(object):
     
     self._last_event_type = None
     
+    self.good_sample = False
+    
   @classmethod
   def peakNextDate(cls, lines):
     """Given some lines from an event file, finds the date of the next game
@@ -74,14 +76,14 @@ class Game(object):
           # record players for 'starters only' roster training
           if roster_style == 'starters':
             for player_id in self.player_ids[team]:
-              player_vector = self.player_vector(player_id, team, persistent_stats_tracker, team_roster, last_game_rosters)
+              player_vector = self._player_vector(player_id, team, persistent_stats_tracker, team_roster, last_game_rosters)
               self.initial_starting_roster[team].append(player_vector)
           if roster_style in ['full', 'last']:
             if roster_style == 'last':
               # Filter the roster list to only include players who participated in the last game
               team_roster = dict(filter(lambda elem: elem[0] in last_game_rosters[self.team_ids[team]], team_roster.items()))
             for player_id in team_roster:
-              player_vector = self.player_vector(player_id, team, persistent_stats_tracker, team_roster, last_game_rosters)
+              player_vector = self._player_vector(player_id, team, persistent_stats_tracker, team_roster, last_game_rosters)
               self.initial_full_roster[team].append(player_vector)
       # note home and away teams
       if new_event.type == Event.Types.info:
@@ -120,21 +122,45 @@ class Game(object):
       for team in [0, 1]:
         team_roster = full_rosters[self.year][self.team_ids[team]]
         for player_id in self.player_ids[team]:
-          player_vector = self.player_vector(player_id, team, persistent_stats_tracker, team_roster, last_game_rosters)
+          player_vector = self._player_vector(player_id, team, persistent_stats_tracker, team_roster, last_game_rosters)
           self.initial_full_roster[team].append(player_vector)
-            
-    persistent_stats_tracker.append(game_stats_tracker)
+          
+    # maybe it helps to have the teams symetrical, ie with starters on the outside
+    # when the arrays are concatinated later?
+    self.initial_full_roster[1].reverse()
+    self.initial_starting_roster[1].reverse()
     
-  def player_vector(self, player_id, home_or_visitor, stats_tracker, team_roster, last_game_rosters):
+    self._set_quality(persistent_stats_tracker, self.player_ids)
+    persistent_stats_tracker.append(game_stats_tracker)
+  
+  def _set_quality(self, stats_tracker, player_id_maps):
+    good_players_min_per_team = 6
+    for home, team_player_ids in enumerate(player_id_maps):
+      good = 0
+      for player_id in team_player_ids:
+        #print(player_id)
+        if stats_tracker.has_player(player_id):
+          good += int(stats_tracker.get_player(player_id).good_sample())
+      if good < good_players_min_per_team:
+        self.good_sample = False
+        print('Game {} is too sparse. Only {} well documented players on team {}.'.format(self.id, good, self.team_ids[home]))
+        return
+    self.good_sample = True
+    
+  def is_good_sample(self):
+    return self.good_sample
+  
+  def _player_vector(self, player_id, home_or_visitor, stats_tracker, team_roster, last_game_rosters):
     if stats_tracker.has_player(player_id):
       player_vector = stats_tracker.get_player(player_id).to_vector()
     else:
       player_vector = Player(player_id).to_vector()
-    player_vector.append(home_or_visitor)  # mark visitor/home
     player_vector.extend(Player.hand_to_1_hot(team_roster[player_id]['batting_hand']))  # mark batting hand
     player_vector.extend(Player.hand_to_1_hot(team_roster[player_id]['throwing_hand']))  # mark throwing hand
     player_vector.append(int(player_id in last_game_rosters[self.team_ids[home_or_visitor]])) # mark 1 if player played last game
-    return player_vector
+    # It's important that this is last; some padding code assumes it.
+    player_vector.append(home_or_visitor)  # mark visitor/home
+    return np.array(player_vector)
     
   def participant_ids(self):
     # useful for the 'last' roster strategy, where we assume the coach will play the same
@@ -154,3 +180,4 @@ class Game(object):
     else:
       sample = self.initial_full_roster[0] + self.initial_full_roster[1]
     return sample, self.score[0], self.score[1]
+    

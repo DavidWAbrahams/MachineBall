@@ -1,6 +1,7 @@
 from keras.callbacks.callbacks import Callback
 import numpy as np
 
+import glob
 import pickle
 
 def ShufflePlayers(samples):
@@ -16,10 +17,14 @@ def FindCenter(sample):
     #print('Found no home team players?')
     return 0
   
-def LoadData(sample_path, label_path, validate_fraction=0.1, test_fraction=0.1):
+def LoadData(parsed_data_prefix, validate_fraction=0.1, test_fraction=0.1):
   #Reads samples & labels from disk, pads them, and does training/test split.
-  samples = pickle.load(open(sample_path, 'rb'))
-  labels = np.array(pickle.load(open(label_path, 'rb')))
+  samples = []
+  labels = []
+  for filename in glob.glob(parsed_data_prefix + '_samples*.*'):
+    samples.extend(pickle.load(open(filename, 'rb')))
+  for filename in glob.glob(parsed_data_prefix + '_labels*.*'):
+    labels.extend(pickle.load(open(filename, 'rb')))
   print('Read {} games'.format(len(samples)))
   max_num_players = max([len(s) for s in samples])
   
@@ -40,6 +45,7 @@ def LoadData(sample_path, label_path, validate_fraction=0.1, test_fraction=0.1):
     while len(game) < max_num_players * 1.1:
       game.insert(center, [0]*player_len)
   samples = np.asarray(samples)
+  labels = np.array(labels)
   
   
   

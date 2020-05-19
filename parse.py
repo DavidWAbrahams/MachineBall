@@ -12,16 +12,16 @@ import os
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('--sample_path', action='store', default='.\\samples.p', dest='sample_path',
-                    help='Output path for training sample pickle')
-parser.add_argument('--label_path', action='store', default='.\\labels.p', dest='label_path',
-                    help='Output path for training label pickle')
+parser.add_argument('--parsed_data_prefix', action='store', default='.\\out', dest='parsed_data_prefix',
+                    help='Output path for training sample pickles')
 parser.add_argument('--data_path', action='store', default='.\\data\\', dest='data_path',
                     help='Input data dir to parse')
 parser.add_argument('--roster_style', action='store', default='participants', dest='roster_style', choices=['starters', 'participants', 'full', 'last'],
                     help='How to populate the roster of each team.')      
-parser.add_argument('--f', action='store', default=False, dest='force',
-                    help='Force overwrite of existing data.')                      
+parser.add_argument('--f', action='store_true', default=False, dest='force',
+                    help='Force overwrite of existing data.')
+parser.add_argument('--max_pickle_len', action='store', default=50000, dest='max_pickle_len',
+                    help='Max entries per pickle. May result in multiple pickles.', type=int)                 
 
 args = parser.parse_args()
 
@@ -144,9 +144,12 @@ def main():
     assert len(samples) == len(labels), '{} vs {}'.format(len(samples), len(labels))
     print('Generated {} training samples'.format(len(samples)))
     # save for later model training.
-    pickle.dump(labels, open(args.label_path, 'wb'))
-    pickle.dump(samples, open(args.sample_path, 'wb'))
-    pickle.dump(game_ids, open(args.sample_path + '.gameids', 'wb'))
+    for i in range(int(len(labels)/args.max_pickle_len) + 1):
+      start = i*args.max_pickle_len
+      end = (i+1)*args.max_pickle_len
+      pickle.dump(labels[start:end], open(args.parsed_data_prefix + '_labels_{}.p'.format(i), 'wb'))
+      pickle.dump(samples[start:end], open(args.parsed_data_prefix + '_samples_{}.p'.format(i), 'wb'))
+      pickle.dump(game_ids[start:end], open(args.parsed_data_prefix + '_gameids_{}.p'.format(i), 'wb'))
 
 if __name__ == "__main__":
     main()

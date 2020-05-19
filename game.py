@@ -94,6 +94,9 @@ class Game(object):
           
       # track the currently active players
       elif new_event.type in [Event.Types.start, Event.Types.sub]:
+        if len(new_event.parts) != 6:
+          print('Expected event to have 6 parts. Actual event: {}'.format(new_event.parts))
+          continue
         # todo: i dunno if this works for designated hitters, pinch hitters, pinch runners
         _, player_id, _, team, _, position = new_event.parts
         team, position = int(team), int(position)

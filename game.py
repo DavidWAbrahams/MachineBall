@@ -94,6 +94,7 @@ class Game(object):
           
       # track the currently active players
       elif new_event.type in [Event.Types.start, Event.Types.sub]:
+        new_event.parts = [part for part in new_event.parts if part.strip('"').strip("'")]
         if len(new_event.parts) != 6:
           print('Expected event to have 6 parts. Actual event: {}'.format(new_event.parts))
           continue

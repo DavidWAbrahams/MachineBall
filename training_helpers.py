@@ -1,6 +1,7 @@
 from keras.callbacks.callbacks import Callback
 import numpy as np
 
+import argparse
 import glob
 import pickle
 
@@ -17,7 +18,7 @@ def FindCenter(sample):
     #print('Found no home team players?')
     return 0
   
-def LoadData(parsed_data_prefix, validate_fraction=0.1, test_fraction=0.1):
+def LoadData(parsed_data_prefix, drop_fraction=0, validate_fraction=0.1, test_fraction=0.1):
   #Reads samples & labels from disk, pads them, and does training/test split.
   samples = []
   labels = []
@@ -47,7 +48,10 @@ def LoadData(parsed_data_prefix, validate_fraction=0.1, test_fraction=0.1):
   samples = np.asarray(samples)
   labels = np.array(labels)
   
-  
+  # Drops the first few samples, on the theory that you may want to
+  # train on just later samples when there is more player data.
+  samples = samples[int(len(samples)*drop_fraction):]
+  labels = labels[int(len(labels)*drop_fraction):]
   
   # Hold back some data for testing. It's probably import that the game
   # order has NOT been shuffled at this point, so that the test samples
@@ -60,10 +64,19 @@ def LoadData(parsed_data_prefix, validate_fraction=0.1, test_fraction=0.1):
     labels, [int((1-test_fraction-validate_fraction) * len(labels)), int((1-validate_fraction) * len(labels))])
     
   assert len(samples_train) + len(samples_validate) + len(samples_test) == len(samples)
+  
+  print('{} train, {} validate, {} test samples.'.format(len(samples_train), len(samples_validate), len(samples_test)))
+  print('Home team won {:.1f}% of training games and {:.1f}% of test games. Your model better beat this.'.format(
+    HomeTeamWinRate(labels_train)*100,
+    HomeTeamWinRate(labels_test)*100))
     
   # Convert these views to copies, so that no cross-edits happen
   return (np.copy(samples_train), np.copy(samples_validate), np.copy(samples_test),
           np.copy(labels_train),  np.copy(labels_validate),  np.copy(labels_test))
+          
+def HomeTeamWinRate(labels):
+  winners = [label[1] > label[0] for label in labels]
+  return sum(winners)/len(winners)
   
 class ShuffleCallback(Callback): 
   """Shuffling the order of players denies the model unfair knowledge about who
@@ -75,3 +88,38 @@ class ShuffleCallback(Callback):
     
   def on_epoch_begin(self, epoch, logs={}):
     ShufflePlayers(self.samples)
+    
+def TrainingArgs():
+  parser = argparse.ArgumentParser()
+
+  parser.add_argument('--parsed_data_prefix', action='store', default='.\\out', dest='parsed_data_prefix',
+                      help='Path prefix for training data pickles')
+  parser.add_argument('--model_path', action='store',
+                      default='winner_model.h5', dest='model_path',
+                      help='Output path for the saved model')
+  parser.add_argument('--max_epochs', action='store',
+                      default=600, dest='max_epochs',
+                      help='Max training epochs', type=int)
+  parser.add_argument('--batch_size', action='store',
+                      default=1000, dest='batch_size',
+                      help='Max training epochs', type=int)
+  parser.add_argument('--patience', action='store',
+                      default=50, dest='patience',
+                      help='Training patience', type=int)
+  parser.add_argument('--rnn_layers', action='store',
+                      default=3, dest='num_rnn_layers',
+                      help='Training patience', type=int)
+  parser.add_argument('--rnn_layer_size', action='store',
+                      default=128, dest='rnn_layer_size',
+                      help='Training patience', type=int)
+  parser.add_argument('--roster_shuffle', action='store_true',
+                      default=False, dest='roster_shuffle',
+                      help='Shuffle player order on rosters each epoch.')
+  parser.add_argument('--validate_fraction', action='store',
+                      default=0.04, dest='validate_fraction',
+                      help='holdout validate data fraction', type=float)
+  parser.add_argument('--test_fraction', action='store',
+                      default=0.04, dest='test_fraction',
+                      help='holdout test data fraction', type=float)
+                      
+  return parser.parse_args()

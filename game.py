@@ -95,11 +95,16 @@ class Game(object):
       # track the currently active players
       elif new_event.type in [Event.Types.start, Event.Types.sub]:
         new_event.parts = [part for part in new_event.parts if part.strip('"').strip("'")]
-        if len(new_event.parts) != 6:
+        if len(new_event.parts) == 5:
+          # this is for a specific data error some time in 1969
+          print('Expected event to have 6 parts but has 5. Attempting to use it anyway. ({})'.format(new_event.parts))
+          _, player_id, team, _, position = new_event.parts
+        elif len(new_event.parts) == 6:
+          # todo: i dunno if this works for designated hitters, pinch hitters, pinch runners
+          _, player_id, _, team, _, position = new_event.parts
+        else:
           print('Expected event to have 6 parts. Actual event: {}'.format(new_event.parts))
           continue
-        # todo: i dunno if this works for designated hitters, pinch hitters, pinch runners
-        _, player_id, _, team, _, position = new_event.parts
         team, position = int(team), int(position)
         self.player_ids[team][player_id] = True
         if new_event.type == Event.Types.start:
@@ -110,6 +115,7 @@ class Game(object):
           game_stats_tracker.unassign_player(player_id=self.active_players[team][position], old_position=position)
         self.active_players[team][position] = player_id
         game_stats_tracker.set_player_position(player_id, position)
+          
       elif new_event.type == Event.Types.play:
         # process play and update score
         score_update = game_stats_tracker.play(new_event, batter_id=player_id, fielder_ids=self.active_players[team])

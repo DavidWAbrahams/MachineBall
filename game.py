@@ -157,6 +157,11 @@ class Game(object):
         self.good_sample = False
         print('Game {} is too sparse. Only {} well documented players on team {}.'.format(self.id, good, self.team_ids[home]))
         return
+      elif len(self.initial_full_roster[home]) < good_players_min_per_team and len(self.initial_starting_roster[home]) < good_players_min_per_team:
+        self.good_sample = False
+        num_players = max(len(self.initial_full_roster[home]), len(self.initial_starting_roster[home]))
+        print('Game {} is too sparse. Only {} total players on team {}.'.format(self.id, num_players, self.team_ids[home]))
+        return
     self.good_sample = True
     
   def is_good_sample(self):

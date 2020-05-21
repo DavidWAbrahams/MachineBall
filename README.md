@@ -23,6 +23,7 @@ pip install numpy
 The Keras model requires TensorFlow, Keras, and
 ```
 pip install h5py
+pip install matplotlib
 ```
 
 ### Parsing game logs
@@ -48,15 +49,24 @@ The decade-length Retrosheet event files are fine too, but they are going to tak
 
 Once you've placed the game logs, you can begin parsing training samples. Simply run
 ```
-python parse.py
+python parse.py --data_path=data --parsed_data_prefix=<name your data here> --roster_style=participants
 ```
 
 This takes a few minutes per season. Once finished, the results are saved as Python pickles for fast reuse. If you want to regenerate the samples later with more data, just delete the pickle files (samples.p and labels.p in your app dir) and rerun the app.
+If you get memory exceptions from trying to parse too much, use "--max_pickle_len=10000" to split data into multiple output files.
+
+There are a number of ways the system can guess the team roster of each game.
+* Read ahead and see everyone who participates (--roster_style=participants)
+* Read ahead and see who actually starts in this game (--roster_style=starters)
+* Use the players who participated in the team's last game (--roster_style=last)
+* Use the team's entire roster, whether or not they participate in this game (--roster_style=full)
+
+Some of these are possible to guesse before a game starts, some are not. (Ones that are not guessable before a game would be useless for prediction.) Some train better, some train worse.
 
 ### Training a model
 I've provided an example Keras model that predicts which team will win, given the stats of all players participating. Simply run:
 ```
-python keras_winner.py
+python keras_winner.py --parsed_data_prefix=<name your data here>
 ```
 This will read the previously generated data and train a multi-layer bidirectional LSTM to predict game winners. The model is saved to disk for later use. It achieves ~65% accuracy when trained on all games from 2017-2019
 

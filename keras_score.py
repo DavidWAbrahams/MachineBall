@@ -22,7 +22,8 @@ y_test = None
 # Read and pad data from disk
 print('Using labeled data found at {}'.format(args.parsed_data_prefix))
 x_train, x_validate, x_test, y_train, y_validate, y_test = LoadData(
-  args.parsed_data_prefix, drop_fraction=0.0,
+  args.parsed_data_prefix,
+  drop_fraction=args.drop_fraction, test_drop_fraction=args.test_drop_fraction,
   validate_fraction=args.validate_fraction, test_fraction=args.test_fraction)
   
 # Early stopping with patience

@@ -8,7 +8,7 @@ import numpy as np
 
 
 class Game(object):
-  def __init__(self):
+  def __init__(self, float_precision=True):
     self.id = 0
     self.date = 0
     self.year = 0
@@ -21,6 +21,8 @@ class Game(object):
     self.starting_player_ids = [OrderedDict(), OrderedDict()]
     # [ team 1 map of position:playerid, team 2 map of position:playerid]
     self.active_players = [{}, {}]
+    # Use floats. Otherwise, uses ints.
+    self.float_precision = float_precision
     
     self._last_event_type = None
     
@@ -161,10 +163,11 @@ class Game(object):
     return self.good_sample
   
   def _player_vector(self, player_id, home_or_visitor, stats_tracker, team_roster, last_game_rosters):
+    
     if stats_tracker.has_player(player_id):
-      player_vector = stats_tracker.get_player(player_id).to_vector()
+      player_vector = stats_tracker.get_player(player_id).to_vector(float_precision=self.float_precision)
     else:
-      player_vector = Player(player_id).to_vector()
+      player_vector = Player(player_id).to_vector(float_precision=self.float_precision)
     player_vector.extend(Player.hand_to_1_hot(team_roster[player_id]['batting_hand']))  # mark batting hand
     player_vector.extend(Player.hand_to_1_hot(team_roster[player_id]['throwing_hand']))  # mark throwing hand
     player_vector.append(int(player_id in last_game_rosters[self.team_ids[home_or_visitor]])) # mark 1 if player played last game
@@ -189,5 +192,6 @@ class Game(object):
       sample = self.initial_starting_roster[0] + self.initial_starting_roster[1]
     else:
       sample = self.initial_full_roster[0] + self.initial_full_roster[1]
+    assert type(sample) == type([])
     return sample, self.score[0], self.score[1]
     

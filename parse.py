@@ -21,17 +21,21 @@ parser.add_argument('--roster_style', action='store', default='participants', de
 parser.add_argument('--f', action='store_true', default=False, dest='force',
                     help='Force overwrite of existing data.')
 parser.add_argument('--max_pickle_len', action='store', default=50000, dest='max_pickle_len',
-                    help='Max entries per pickle. May result in multiple pickles.', type=int)                 
+                    help='Max entries per pickle. May result in multiple pickles.', type=int)
+parser.add_argument('--float_precision', action='store_true', default=False, dest='float_precision',
+                    help='Max entries per pickle. May result in multiple pickles.')                     
 
 args = parser.parse_args()
 
 def season_ongoing(season_event_file_lines):
+  # checks if there are any unparsed games left in the data files
   for team in season_event_file_lines:
     if Game.peakNextDate(team):
       return True
   return False
   
 def data_from_roster_files():
+  # Read the annual lineup for every team, found in .ROS data files
   year_dirs = [f.path for f in os.scandir(args.data_path) if f.is_dir()]
   year_dirs.sort()
   rosters = OrderedDict() # year: team: [player1, player2, ...]
@@ -63,6 +67,7 @@ def data_from_roster_files():
   return rosters
   
 def data_from_game_files():
+  # Read all games from data files.
   year_dirs = [f.path for f in os.scandir(args.data_path) if f.is_dir()]
   year_dirs.sort()
   print('Years: {}'.format(year_dirs))
@@ -99,7 +104,7 @@ def data_from_game_files():
       
       next_game_lines = season_event_file_lines[next_game_team_idx]
       # pass lines to game gobbler
-      new_game = Game()
+      new_game = Game(float_precision=args.float_precision)
       new_game.gobble(next_game_lines, stats, roster_style=args.roster_style, full_rosters=full_rosters, last_game_rosters=last_game_rosters)
       games.append(new_game)
       #print('Finished parsing game {} with score {}'.format(new_game.id, new_game.score))
@@ -145,6 +150,7 @@ def main():
     print('Generated {} training samples'.format(len(samples)))
     # save for later model training.
     for i in range(int(len(labels)/args.max_pickle_len) + 1):
+      # Save data in chunks to avoid OOM errors during pickling.
       start = i*args.max_pickle_len
       end = (i+1)*args.max_pickle_len
       pickle.dump(labels[start:end], open(args.parsed_data_prefix + '_labels_{}.p'.format(i), 'wb'))

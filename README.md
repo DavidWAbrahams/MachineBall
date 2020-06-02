@@ -4,7 +4,7 @@ Use public baseball data to train machine learning models. Baseball has just abo
 1. A list containing the stats of every player in the game (snapshotted before the game began). Each player is marked visiting team (0) or home team (1).
 2. The final score of the game.
 
-An example Keras model is provided that achieves ~65% accuracy predicting game winners (on heldout test data) (given 3 years of training data). This compares favorably with [Vegas odds, which pick the winning team only ~58% of the time](https://www.oddsshark.com/sports-betting/which-sport-do-betting-underdogs-win-most-often). But take this performance with some skepticism, because the model has access to some unknowable data: the exact list of players who will participate in a game. So its performance would suffer in the real world, where we would have to guess who is injured and who will actually play.
+An example Keras model is provided that achieves ~59% accuracy predicting game winners (if told the starters for that game) (on heldout test data) (given 30 years of training data). This compares favorably with [Vegas odds, which pick the winning team ~58% of the time](https://www.oddsshark.com/sports-betting/which-sport-do-betting-underdogs-win-most-often). This accuracy applies the games immediately after the training data. Accuracy degrades to ~53% if you try a prediction 600 games later.
 
 ## Words of Warning
 

@@ -51,16 +51,16 @@ for _ in range(args.num_rnn_layers - 1):
   model.add(Bidirectional(LSTM(
     args.rnn_layer_size, return_sequences=True, dropout=0.0, recurrent_dropout=0.0)))
 model.add(Bidirectional(LSTM(args.rnn_layer_size)))
-#model.add(Dropout(0.1))
+model.add(Dropout(0.4))
 model.add(Dense(args.rnn_layer_size//2, activation=None))
+model.add(BatchNormalization())
 model.add(Activation('relu'))
-#model.add(Dropout(0.2))
+#model.add(Dropout(0.3))
 
 model.add(Dense(
   1, activation=None,
-  kernel_regularizer=regularizers.l2(0.001),
-  bias_regularizer=regularizers.l2(0.001)))
-#BatchNormalization()
+  kernel_regularizer=regularizers.l2(0.01),
+  bias_regularizer=regularizers.l2(0.01)))
 model.add(Activation('sigmoid'))
  
 model.compile(
